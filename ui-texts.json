@@ -1,0 +1,527 @@
+﻿[
+  {
+    "kind": "Log",
+    "line": 123,
+    "text": "Stok sorgulan├ä┬▒yor: ID ${productId}"
+  },
+  {
+    "kind": "Log",
+    "line": 158,
+    "text": "${ids.length} ├â┬╝r├â┬╝n├â┬╝n stoklar├ä┬▒ ├â┬ğekiliyor..."
+  },
+  {
+    "kind": "Log",
+    "line": 170,
+    "text": "Stok al├ä┬▒nd├ä┬▒: ${id} -> ${stock}"
+  },
+  {
+    "kind": "Log",
+    "line": 173,
+    "text": "Stok al├ä┬▒namad├ä┬▒: ${id}"
+  },
+  {
+    "kind": "Log",
+    "line": 182,
+    "text": "Stok ├â┬ğekimi tamamland├ä┬▒. Ba├à┼©ar├ä┬▒l├ä┬▒: ${success}, Ba├à┼©ar├ä┬▒s├ä┬▒z: ${failed}"
+  },
+  {
+    "kind": "Log",
+    "line": 220,
+    "text": "├â┼ôr├â┬╝n bulunamad├ä┬▒: ${productId}"
+  },
+  {
+    "kind": "Log",
+    "line": 224,
+    "text": "├â┼ôr├â┬╝n foto├ä┼©raf├ä┬▒ y├â┬╝kleniyor: ${product.name}"
+  },
+  {
+    "kind": "Log",
+    "line": 233,
+    "text": "Foto├ä┼©raf iste├ä┼©i ba├à┼©ar├ä┬▒s├ä┬▒z: ${response.status}"
+  },
+  {
+    "kind": "Log",
+    "line": 248,
+    "text": "├â┼ôr├â┬╝n i├â┬ğin foto├ä┼©raf bulunamad├ä┬▒"
+  },
+  {
+    "kind": "Log",
+    "line": 261,
+    "text": "├â┼ôr├â┬╝n foto├ä┼©raf├ä┬▒ y├â┬╝klendi: ${product.name}"
+  },
+  {
+    "kind": "Log",
+    "line": 263,
+    "text": "├â┼ôr├â┬╝n foto├ä┼©raf├ä┬▒ y├â┬╝klenirken hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}"
+  },
+  {
+    "kind": "Log",
+    "line": 271,
+    "text": "Stok g├â┬╝ncelleniyor: ID ${productId} ├óÔÇáÔÇÖ ${newStockCount}"
+  },
+  {
+    "kind": "Log",
+    "line": 282,
+    "text": "Stok g├â┬╝ncellendi: ID ${productId} ├óÔÇáÔÇÖ ${newStockCount}"
+  },
+  {
+    "kind": "Log",
+    "line": 287,
+    "text": "Stok g├â┬╝ncellenemedi: ID ${productId}"
+  },
+  {
+    "kind": "Log",
+    "line": 342,
+    "text": "Kategoriler y├â┬╝kleniyor..."
+  },
+  {
+    "kind": "Log",
+    "line": 364,
+    "text": "${groups.length} kategori y├â┬╝klendi"
+  },
+  {
+    "kind": "Log",
+    "line": 367,
+    "text": "Kategoriler y├â┬╝klenirken hata"
+  },
+  {
+    "kind": "Log",
+    "line": 380,
+    "text": "├â┼ôr├â┬╝nler y├â┬╝kleniyor..."
+  },
+  {
+    "kind": "Log",
+    "line": 385,
+    "text": "API ├â┬ğa├ä┼©r├ä┬▒s├ä┬▒ yap├ä┬▒l├ä┬▒yor"
+  },
+  {
+    "kind": "Log",
+    "line": 423,
+    "text": "${totalProducts} ├â┬╝r├â┬╝n y├â┬╝klendi, toplam stok: ${totalStock}"
+  },
+  {
+    "kind": "Log",
+    "line": 444,
+    "text": "├â┼ôr├â┬╝nler y├â┬╝klenirken hata"
+  },
+  {
+    "kind": "Alert",
+    "line": 513,
+    "text": "├ó┬Ø┼Æ G├â┬╝ncellenecek stok de├ä┼©i├à┼©ikli├ä┼©i bulunamad├ä┬▒!"
+  },
+  {
+    "kind": "Log",
+    "line": 526,
+    "text": "${stockUpdates.length} ├â┬╝r├â┬╝n├â┬╝n stoku g├â┬╝ncelleniyor..."
+  },
+  {
+    "kind": "Log",
+    "line": 539,
+    "text": "K├ä┬▒smi ba├à┼©ar├ä┬▒: ${successfulUpdates.length} ba├à┼©ar├ä┬▒l├ä┬▒, ${failedUpdates.length} ba├à┼©ar├ä┬▒s├ä┬▒z"
+  },
+  {
+    "kind": "Alert",
+    "line": 545,
+    "text": "├ó┼í┬á├»┬©┬Å Stok g├â┬╝ncelleme tamamland├ä┬▒ fakat baz├ä┬▒ ├â┬╝r├â┬╝nlerde hata olu├à┼©tu:\\n\\n├ó┼ôÔÇĞ Ba├à┼©ar├ä┬▒l├ä┬▒: ${successfulUpdates.length}\\n├ó┬Ø┼Æ Ba├à┼©ar├ä┬▒s├ä┬▒z: ${failedUpdates.length}\\n\\nBa├à┼©ar├ä┬▒s├ä┬▒z ├â┬╝r├â┬╝nler: ${failedProducts}"
+  },
+  {
+    "kind": "Log",
+    "line": 547,
+    "text": "T├â┬╝m stok g├â┬╝ncellemeleri ba├à┼©ar├ä┬▒l├ä┬▒: ${successfulUpdates.length} ├â┬╝r├â┬╝n"
+  },
+  {
+    "kind": "Alert",
+    "line": 548,
+    "text": "├ó┼ôÔÇĞ T├â┬╝m stok g├â┬╝ncellemeleri ba├à┼©ar├ä┬▒yla tamamland├ä┬▒!\\n\\n─ş┼©ÔÇ£┬Ğ ${successfulUpdates.length} ├â┬╝r├â┬╝n g├â┬╝ncellendi"
+  },
+  {
+    "kind": "Log",
+    "line": 558,
+    "text": "Kritik hata: Stok g├â┬╝ncelleme ba├à┼©ar├ä┬▒s├ä┬▒z"
+  },
+  {
+    "kind": "Alert",
+    "line": 559,
+    "text": "─ş┼©ÔÇÖ┬Ñ Stok g├â┬╝ncellemesi s├ä┬▒ras├ä┬▒nda kritik hata olu├à┼©tu!\\n\\nDetay: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}\\n\\nL├â┬╝tfen tekrar deneyin."
+  },
+  {
+    "kind": "Alert",
+    "line": 569,
+    "text": "Filtreye uyan ├â┬╝r├â┬╝n bulunamad├ä┬▒."
+  },
+  {
+    "kind": "Log",
+    "line": 589,
+    "text": "Filtreye uyan ${filtered.length} ├â┬╝r├â┬╝n i├â┬ğin say├ä┬▒lan=0 atand├ä┬▒."
+  },
+  {
+    "kind": "Alert",
+    "line": 592,
+    "text": "Filtreye uyan ${filtered.length} ├â┬╝r├â┬╝n 0 olarak say├ä┬▒ld├ä┬▒.\\n\\n\"De├ä┼©i├à┼©iklikleri Uygula\" ile stoklar├ä┬▒ 0'a g├â┬╝ncelleyebilirsiniz."
+  },
+  {
+    "kind": "Log",
+    "line": 717,
+    "text": "Stok Y├â┬Ânetim Sistemi ba├à┼©lat├ä┬▒ld├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 822,
+    "text": "Stok Say├ä┬▒m Ge├â┬ğmi├à┼©i"
+  },
+  {
+    "kind": "JSX",
+    "line": 823,
+    "text": "G├â┬╝nl├â┬╝k stok de├ä┼©i├à┼©ikliklerini g├â┬Âr├â┬╝nt├â┬╝leyin (├óÔÇá┬É ├óÔÇáÔÇÖ tu├à┼©lar├ä┬▒ ile navigasyon)"
+  },
+  {
+    "kind": "JSX",
+    "line": 832,
+    "text": ":"
+  },
+  {
+    "kind": "JSX",
+    "line": 849,
+    "text": "Hen├â┬╝z say├ä┬▒m yap├ä┬▒lmam├ä┬▒├à┼©"
+  },
+  {
+    "kind": "JSX",
+    "line": 918,
+    "text": "Say├ä┬▒m yap├ä┬▒lan g├â┬╝nler"
+  },
+  {
+    "kind": "JSX",
+    "line": 963,
+    "text": "Toplam ├â┼ôr├â┬╝n"
+  },
+  {
+    "kind": "JSX",
+    "line": 967,
+    "text": "Say├ä┬▒lan ├â┼ôr├â┬╝n"
+  },
+  {
+    "kind": "JSX",
+    "line": 971,
+    "text": "Eklenen ├â┼ôr├â┬╝n"
+  },
+  {
+    "kind": "JSX",
+    "line": 975,
+    "text": "Toplam De├ä┼©i├à┼©im"
+  },
+  {
+    "kind": "JSX",
+    "line": 982,
+    "text": "De├ä┼©i├à┼©iklik Detaylar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1001,
+    "text": "Mevcut"
+  },
+  {
+    "kind": "JSX",
+    "line": 1005,
+    "text": "Say├ä┬▒lan"
+  },
+  {
+    "kind": "JSX",
+    "line": 1009,
+    "text": "Eklenen"
+  },
+  {
+    "kind": "JSX",
+    "line": 1013,
+    "text": "Fark"
+  },
+  {
+    "kind": "JSX",
+    "line": 1027,
+    "text": "Toplam"
+  },
+  {
+    "kind": "JSX",
+    "line": 1046,
+    "text": "Hen├â┬╝z hi├â┬ğ say├ä┬▒m yap├ä┬▒lmam├ä┬▒├à┼©"
+  },
+  {
+    "kind": "JSX",
+    "line": 1055,
+    "text": "T├â┬╝m De├ä┼©i├à┼©iklikler"
+  },
+  {
+    "kind": "JSX",
+    "line": 1057,
+    "text": "Hen├â┬╝z stok de├ä┼©i├à┼©ikli├ä┼©i yok"
+  },
+  {
+    "kind": "Log",
+    "line": 1098,
+    "text": "Loglar temizlendi"
+  },
+  {
+    "kind": "Log",
+    "line": 1108,
+    "text": "${filteredLogs.length} log kopyaland├ä┬▒"
+  },
+  {
+    "kind": "Log",
+    "line": 1110,
+    "text": "Loglar kopyalan├ä┬▒rken hata olu├à┼©tu"
+  },
+  {
+    "kind": "JSX",
+    "line": 1117,
+    "text": "Sistem Ayarlar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1118,
+    "text": "API ba├ä┼©lant├ä┬▒ ayarlar├ä┬▒n├ä┬▒ ve sistem parametrelerini yap├ä┬▒land├ä┬▒r├ä┬▒n"
+  },
+  {
+    "kind": "JSX",
+    "line": 1123,
+    "text": "API Ba├ä┼©lant├ä┬▒ Ayarlar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1127,
+    "text": "Sunucu IP Adresi"
+  },
+  {
+    "kind": "Attr",
+    "line": 1132,
+    "text": "192.168.1.5"
+  },
+  {
+    "kind": "JSX",
+    "line": 1136,
+    "text": "API Endpoint"
+  },
+  {
+    "kind": "Attr",
+    "line": 1141,
+    "text": "/v2.0/products"
+  },
+  {
+    "kind": "JSX",
+    "line": 1148,
+    "text": "Kullan├ä┬▒c├ä┬▒ Ad├ä┬▒"
+  },
+  {
+    "kind": "Attr",
+    "line": 1153,
+    "text": "kullan├ä┬▒c├ä┬▒ ad├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1157,
+    "text": "├à┬Şifre"
+  },
+  {
+    "kind": "Attr",
+    "line": 1164,
+    "text": "├à┼©ifre"
+  },
+  {
+    "kind": "JSX",
+    "line": 1181,
+    "text": "Sayfa Ba├à┼©├ä┬▒ ├â┼ôr├â┬╝n Say├ä┬▒s├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1190,
+    "text": "20"
+  },
+  {
+    "kind": "JSX",
+    "line": 1191,
+    "text": "50"
+  },
+  {
+    "kind": "JSX",
+    "line": 1192,
+    "text": "100"
+  },
+  {
+    "kind": "JSX",
+    "line": 1193,
+    "text": "500"
+  },
+  {
+    "kind": "JSX",
+    "line": 1227,
+    "text": "Temel Parametreler"
+  },
+  {
+    "kind": "Attr",
+    "line": 1232,
+    "text": "EnableStock=true&Pagination.IsScroll=true"
+  },
+  {
+    "kind": "JSX",
+    "line": 1242,
+    "text": "├â┼ôr├â┬╝n Kategorileri"
+  },
+  {
+    "kind": "JSX",
+    "line": 1257,
+    "text": "Stok Sayfas├ä┬▒nda G├â┬Âsterilecek Kategoriler"
+  },
+  {
+    "kind": "JSX",
+    "line": 1285,
+    "text": "Se├â┬ğilen Kategoriler:"
+  },
+  {
+    "kind": "JSX",
+    "line": 1302,
+    "text": "Kategori bulunamad├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1303,
+    "text": "Kategorileri y├â┬╝klemek i├â┬ğin yukar├ä┬▒daki butona t├ä┬▒klay├ä┬▒n"
+  },
+  {
+    "kind": "JSX",
+    "line": 1310,
+    "text": "Olu├à┼©turulan API URL'leri:"
+  },
+  {
+    "kind": "JSX",
+    "line": 1313,
+    "text": "├â┼ôr├â┬╝nler Listesi (GET):"
+  },
+  {
+    "kind": "JSX",
+    "line": 1319,
+    "text": "Kategoriler Listesi (GET):"
+  },
+  {
+    "kind": "JSX",
+    "line": 1325,
+    "text": "Stok G├â┬╝ncelleme (POST):"
+  },
+  {
+    "kind": "JSX",
+    "line": 1341,
+    "text": "Sistem Loglar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1349,
+    "text": "Hepsi"
+  },
+  {
+    "kind": "JSX",
+    "line": 1350,
+    "text": "Bilgi"
+  },
+  {
+    "kind": "JSX",
+    "line": 1351,
+    "text": "Ba├à┼©ar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1352,
+    "text": "Uyar├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1353,
+    "text": "Hata"
+  },
+  {
+    "kind": "JSX",
+    "line": 1364,
+    "text": "Kopyala"
+  },
+  {
+    "kind": "JSX",
+    "line": 1374,
+    "text": "Temizle"
+  },
+  {
+    "kind": "JSX",
+    "line": 1424,
+    "text": "Son 100 log saklan├ä┬▒r"
+  },
+  {
+    "kind": "JSX",
+    "line": 1430,
+    "text": "Tehlikeli &#304;&#351;lemler"
+  },
+  {
+    "kind": "JSX",
+    "line": 1475,
+    "text": "Stok"
+  },
+  {
+    "kind": "JSX",
+    "line": 1497,
+    "text": "Ayarlar"
+  },
+  {
+    "kind": "JSX",
+    "line": 1544,
+    "text": "Uygula"
+  },
+  {
+    "kind": "JSX",
+    "line": 1545,
+    "text": "De├ä┼©i├à┼©iklikleri Uygula"
+  },
+  {
+    "kind": "JSX",
+    "line": 1565,
+    "text": "Stok g&#252;ncelleniyor..."
+  },
+  {
+    "kind": "JSX",
+    "line": 1580,
+    "text": "Stoklar y&#252;kleniyor..."
+  },
+  {
+    "kind": "JSX",
+    "line": 1593,
+    "text": "Stok &#220;r&#252;nleri"
+  },
+  {
+    "kind": "Attr",
+    "line": 1599,
+    "text": "&#220;r&#252;n ad&#305; veya barkod ile ara..."
+  },
+  {
+    "kind": "JSX",
+    "line": 1687,
+    "text": "G├â┬Âster"
+  },
+  {
+    "kind": "JSX",
+    "line": 1695,
+    "text": "├â┼ôr├â┬╝n"
+  },
+  {
+    "kind": "Attr",
+    "line": 1729,
+    "text": "0"
+  },
+  {
+    "kind": "JSX",
+    "line": 1862,
+    "text": "├â┼ôr├â┬╝n ad├ä┬▒ veya barkod numaras├ä┬▒n├ä┬▒ kontrol edin"
+  },
+  {
+    "kind": "JSX",
+    "line": 1866,
+    "text": "Bu kategoride ├â┬╝r├â┬╝n bulunamad├ä┬▒"
+  },
+  {
+    "kind": "JSX",
+    "line": 1867,
+    "text": "Farkl├ä┬▒ bir kategori se├â┬ğin veya \"Hepsini G├â┬Âster\" butonuna t├ä┬▒klay├ä┬▒n"
+  }
+]

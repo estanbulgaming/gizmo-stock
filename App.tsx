@@ -1,0 +1,4471 @@
+﻿import React, { useEffect, useState } from 'react';
+
+import { NumpadInput } from './components/NumpadInput';
+
+
+import { Calendar } from './components/ui/calendar';
+
+import { Card } from './components/ui/card';
+
+import { Button } from './components/ui/button';
+
+import { Input } from './components/ui/input';
+
+import { Label } from './components/ui/label';
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
+
+import { Checkbox } from './components/ui/checkbox';
+
+import { Download, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy } from 'lucide-react';
+
+import { Progress } from './components/ui/progress';
+
+import { ImageWithFallback } from './components/figma/ImageWithFallback';
+
+import { t } from './i18n';
+
+import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
+
+import { formatPrice } from './utils/product';
+import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
+import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService } from './services/api';
+
+
+
+export default function App() {
+
+  const [stockData, setStockData] = useState<StockData[]>([]);
+
+  const [countedValues, setCountedValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [addedValues, setAddedValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [priceValues, setPriceValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
+
+  const [currentPage, setCurrentPage] = useState<'stock' | 'history' | 'settings'>('stock');
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  const [showDateList, setShowDateList] = useState(true);
+
+  const [currentDateIndex, setCurrentDateIndex] = useState(0);
+
+  
+
+  // API Configuration states
+
+  const [apiConfig, setApiConfig] = useApiConfig(DEFAULT_API_CONFIG);
+
+
+  // Use relative base path so dev (Vite) and prod (Nginx) proxies handle CORS
+
+  const apiBase = '/api';
+
+  const joinApi = (path: string) => {
+
+    let p = (path || '').trim();
+
+    if (!p.startsWith('/')) p = '/' + p;
+
+    return p.startsWith('/api/') ? p : `${apiBase}${p}`;
+
+  };
+
+
+
+  // Auto-load missing product images when the setting is enabled
+
+  useEffect(() => {
+
+    if (!apiConfig.showProductImages || stockData.length === 0) return;
+
+    const idsToLoad = stockData
+
+      .filter(p => !p.imageUrl && !productImages[p.id])
+
+      .slice(0, 24)
+
+      .map(p => p.id);
+
+    if (idsToLoad.length === 0) return;
+
+    const concurrency = 5;
+
+    (async () => {
+
+      for (let i = 0; i < idsToLoad.length; i += concurrency) {
+
+        const batch = idsToLoad.slice(i, i + concurrency);
+
+        await Promise.all(batch.map(id => loadProductImage(id)));
+
+      }
+
+    })();
+
+  }, [apiConfig.showProductImages, stockData]);
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [productImages, setProductImages] = useState<{ [key: string]: string }>({});
+
+  const [enlargedImage, setEnlargedImage] = useState<{ url: string; name: string } | null>(null);
+
+  const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
+
+  const [selectedProductGroups, setSelectedProductGroups] = useState<number[]>([]);
+
+  const [activeProductGroupFilter, setActiveProductGroupFilter] = useState<number | null>(null);
+
+  const [isUpdatingStock, setIsUpdatingStock] = useState(false);
+
+  const [updateProgress, setUpdateProgress] = useState({ current: 0, total: 0 });
+
+  // Live stock fetch (GET /api/stock/:id) states
+
+  const [isFetchingStocks, setIsFetchingStocks] = useState(false);
+
+  const [stockFetchProgress, setStockFetchProgress] = useState({ current: 0, total: 0 });
+
+
+
+  // System Logs
+
+  const [systemLogs, setSystemLogs] = useState<SystemLogEntry[]>([]);
+
+
+
+
+
+  const handleCountedChange = (id: string, countedValue: number | '') => {
+
+    setCountedValues(prev => ({
+
+      ...prev,
+
+      [id]: countedValue
+
+    }));
+
+  };
+
+
+
+  // Single product stock fetch (GET /api/stock/:id)
+
+  const fetchStockById = async (productId: string) => {
+    const url = `${apiBase}/stock/${productId}`;
+    addLog('info', 'STOCK_GET', `Stok sorgulanıyor: ID ${productId}`, { url });
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    // Try JSON first; fallback to plain text number
+    let text: string | null = null;
+    try {
+      const data = await response.json();
+      const resultValue =
+        typeof data === 'object' && data !== null && 'result' in data
+          ? (data as Record<string, unknown>).result
+          : data;
+      const numeric = Number(resultValue);
+      if (Number.isFinite(numeric)) return Math.round(numeric);
+      text = JSON.stringify(resultValue);
+    } catch {
+      // ignore JSON parse error, try as text
+    }
+    if (text == null) text = (await response.text())?.trim();
+    const num = Number((text || '').toString().trim());
+    if (!Number.isFinite(num)) {
+      throw new Error('Invalid stock response');
+    }
+    return Math.round(num);
+  };
+
+
+
+  // Batch fetch stocks for a list of product IDs with progress (similar to update batch)
+
+  const fetchStocksForProducts = async (ids: string[]) => {
+
+    if (!ids || ids.length === 0) return;
+
+    setIsFetchingStocks(true);
+
+    setStockFetchProgress({ current: 0, total: ids.length });
+
+    addLog('info', 'STOCK_GET_BATCH', `${ids.length} Ãƒ¼rÃƒ¼nÃƒ¼n stoklar? Ãƒ§ekiliyor...`);
+
+    const concurrency = 5;
+
+    let success = 0;
+
+    let failed = 0;
+
+    try {
+
+      for (let i = 0; i < ids.length; i += concurrency) {
+
+        const batch = ids.slice(i, i + concurrency);
+
+        await Promise.all(
+
+          batch.map(async (id) => {
+
+            try {
+
+              const stock = await fetchStockById(id);
+
+              setStockData((prev) => prev.map((p) => (p.id === id ? { ...p, count: stock } : p)));
+
+              addLog('success', 'STOCK_GET', `Stok al?nd?: ${id} -> ${stock}`);
+
+              success += 1;
+
+            } catch (error) {
+
+              addLog('warning', 'STOCK_GET', `Stok al?namad?: ${id}`, error);
+
+              failed += 1;
+
+            } finally {
+
+              setStockFetchProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+
+            }
+
+          })
+
+        );
+
+      }
+
+    } finally {
+
+      addLog('info', 'STOCK_GET_BATCH', `Stok Ãƒ§ekimi tamamland?. Ba?ar?l?: ${success}, Ba?ar?s?z: ${failed}`);
+
+      setIsFetchingStocks(false);
+
+      setStockFetchProgress({ current: 0, total: 0 });
+
+    }
+
+  };
+
+
+
+  const handleAddedChange = (id: string, addedValue: number | '') => {
+
+    setAddedValues(prev => ({
+
+      ...prev,
+
+      [id]: addedValue
+
+    }));
+
+  };
+
+
+
+  const handlePriceInputChange = (id: string, inputValue: string) => {
+
+    const normalized = inputValue.replace(',', '.').trim();
+
+    if (normalized === '') {
+
+      setPriceValues(prev => ({
+
+        ...prev,
+
+        [id]: ''
+
+      }));
+
+      return;
+
+    }
+
+
+
+    const parsed = Number(normalized);
+
+    if (!Number.isFinite(parsed)) {
+
+      return;
+
+    }
+
+
+
+    setPriceValues(prev => ({
+
+      ...prev,
+
+      [id]: parsed
+
+    }));
+
+  };
+
+
+
+  // Logging function
+
+  const addLog = (level: 'info' | 'success' | 'warning' | 'error', category: string, message: string, details?: unknown) => {
+
+    const logEntry: SystemLogEntry = {
+
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+
+      timestamp: new Date().toLocaleString('tr-TR'),
+
+      level,
+
+      category,
+
+      message,
+
+      details
+
+    };
+
+    
+
+    setSystemLogs(prev => [logEntry, ...prev].slice(0, 100)); // Keep only last 100 logs
+
+    
+
+    // Also log to browser console for development
+
+    const consoleMethod = level === 'error' ? 'error' : level === 'warning' ? 'warn' : 'log';
+
+    console[consoleMethod](`[${category}] ${message}`, details || '');
+
+  };
+
+
+
+  // Load product image for a specific product (real API via proxy)
+
+  const loadProductImage = async (productId: string) => {
+    if (!apiConfig.showProductImages) return;
+    if (productImages[productId]) return;
+    const product = stockData.find(p => p.id === productId);
+    if (!product) {
+      addLog('warning', 'IMAGE', `Ürün bulunamadı: ${productId}`);
+      return;
+    }
+    addLog('info', 'IMAGE', `Ürün fotoğrafı yükleniyor: ${product.name}`);
+    try {
+      const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, productId, product);
+      if (!imageUrl) {
+        addLog('warning', 'IMAGE', 'Ürün için fotoğraf bulunamadı');
+        return;
+      }
+      setProductImages(prev => ({
+        ...prev,
+        [productId]: imageUrl,
+      }));
+      setStockData(prev => prev.map(item =>
+        item.id === productId ? { ...item, imageUrl } : item
+      ));
+      addLog('success', 'IMAGE', `Ürün fotoğrafı yüklendi: ${product.name}`);
+    } catch (error) {
+      addLog('error', 'IMAGE', `Ürün fotoğrafı yüklenirken hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
+  };
+
+
+
+  // Stock Update API Function
+
+  const updateProductStock = async (productId: string, newStockCount: number) => {
+
+    try {
+
+      const url = `${apiBase}/stock/${productId}/${newStockCount}`;
+
+      addLog('info', 'STOCK_API', `Stok gÃƒ¼ncelleniyor: ID ${productId} > ${newStockCount}`, { url });
+
+      const response = await fetch(url, {
+
+        method: 'POST',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+      });
+
+      if (!response.ok) {
+
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      }
+
+      addLog('success', 'STOCK_API', `Stok gÃƒ¼ncellendi: ID ${productId} > ${newStockCount}`);
+
+      const result = await response.json().catch(() => ({ success: true }));
+
+      return result;
+
+      
+
+    } catch (error) {
+
+      addLog('error', 'STOCK_API', `Stok gÃƒ¼ncellenemedi: ID ${productId}`, error);
+
+      throw error;
+
+    }
+
+  };
+
+
+
+  const updateProductPrice = async (productId: string, newPriceValue: number) => {
+
+    try {
+
+      const basePricePath = joinApi(apiConfig.priceEndpoint || '/price');
+
+      const normalizedBase = basePricePath.endsWith('/') ? basePricePath.slice(0, -1) : basePricePath;
+
+      const formattedPrice = newPriceValue.toString();
+
+      const url = `${normalizedBase}/${productId}/${encodeURIComponent(formattedPrice)}`;
+
+      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${formattedPrice}`, { url });
+
+      const response = await fetch(url, {
+
+        method: 'POST',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+      });
+
+      if (!response.ok) {
+
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      }
+
+      addLog('success', 'PRICE_API', `Fiyat guncellendi: ID ${productId} -> ${formattedPrice}`);
+
+      const result = await response.json().catch(() => ({ success: true }));
+
+      return result;
+
+    } catch (error) {
+
+      addLog('error', 'PRICE_API', `Fiyat guncellenemedi: ID ${productId}`, error);
+
+      throw error;
+
+    }
+
+  };
+
+
+
+  // Promise Pool for parallel API calls with concurrency limit
+
+  const updateStockBatch = async (updates: Array<{ productId: string; newStock: number }>) => {
+
+    const concurrency = 5; // Max 5 simultaneous requests
+
+    const results: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+    
+
+    setIsUpdatingStock(true);
+
+    setUpdateProgress({ current: 0, total: updates.length });
+
+    
+
+    try {
+
+      // Process updates in batches
+
+      for (let i = 0; i < updates.length; i += concurrency) {
+
+        const batch = updates.slice(i, i + concurrency);
+
+        
+
+        // Execute batch in parallel
+
+        const batchPromises = batch.map(async (update) => {
+
+          try {
+
+            await updateProductStock(update.productId, update.newStock);
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return { success: true, productId: update.productId };
+
+          } catch (error) {
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return { 
+
+              success: false, 
+
+              productId: update.productId, 
+
+              error: error instanceof Error ? error.message : 'Unknown error' 
+
+            };
+
+          }
+
+        });
+
+        
+
+        const batchResults = await Promise.all(batchPromises);
+
+        results.push(...batchResults);
+
+        
+
+        // Small delay between batches to avoid overwhelming the server
+
+        if (i + concurrency < updates.length) {
+
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        }
+
+      }
+
+      
+
+      return results;
+
+      
+
+    } finally {
+
+      setIsUpdatingStock(false);
+
+      setUpdateProgress({ current: 0, total: 0 });
+
+    }
+
+  };
+
+
+
+  const updatePriceBatch = async (updates: Array<{ productId: string; newPrice: number }>) => {
+
+    if (updates.length === 0) {
+
+      return [];
+
+    }
+
+
+
+    const concurrency = 5;
+
+    const results: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+
+
+    setIsUpdatingStock(true);
+
+    setUpdateProgress({ current: 0, total: updates.length });
+
+
+
+    try {
+
+      for (let i = 0; i < updates.length; i += concurrency) {
+
+        const batch = updates.slice(i, i + concurrency);
+
+        const batchPromises = batch.map(async (update) => {
+
+          try {
+
+            await updateProductPrice(update.productId, update.newPrice);
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return { success: true, productId: update.productId };
+
+          } catch (error) {
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return {
+
+              success: false,
+
+              productId: update.productId,
+
+              error: error instanceof Error ? error.message : 'Unknown error'
+
+            };
+
+          }
+
+        });
+
+
+
+        const batchResults = await Promise.all(batchPromises);
+
+        results.push(...batchResults);
+
+
+
+        if (i + concurrency < updates.length) {
+
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        }
+
+      }
+
+
+
+      return results;
+
+    } finally {
+
+      setIsUpdatingStock(false);
+
+      setUpdateProgress({ current: 0, total: 0 });
+
+    }
+
+  };
+
+
+
+  // API Functions
+
+  const fetchProductGroups = async () => {
+    try {
+      const url = joinApi(apiConfig.groupsEndpoint);
+      addLog('info', 'GROUPS_API', 'Kategoriler y?kleniyor...', { url, auth: `${apiConfig.username}:***` });
+      const groups = await fetchProductGroupsService({ apiConfig, joinApi });
+      setProductGroups(groups);
+      addLog('success', 'GROUPS_API', `${groups.length} kategori y?klendi`, { groups: groups.map(g => g.name) });
+    } catch (error) {
+      addLog('error', 'GROUPS_API', 'Kategoriler y?klenirken hata', error);
+      let errorMessage = '?r?n kategorileri y?klenirken hata olu?tu!';
+      if (error instanceof Error) {
+        errorMessage += `\n\nDetay: ${error.message}`;
+      }
+      alert(errorMessage);
+    }
+  };
+
+
+
+  const fetchProducts = async () => {
+    setIsLoadingProducts(true);
+    addLog('info', 'PRODUCTS_API', 'Ürünler yükleniyor...');
+    const deletedParam = apiConfig.includeDeleted ? "IsDeleted=true" : "IsDeleted=false";
+    const requestUrl = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}`;
+    addLog('info', 'PRODUCTS_API', 'API çağrısı yapılıyor', {
+      url: requestUrl,
+      auth: `${apiConfig.username}:***`,
+      params: { deletedParam, limit: apiConfig.paginationLimit },
+    });
+    try {
+      const { products, totalProducts, totalStock } = await fetchProductsService({ apiConfig, joinApi });
+      setStockData(products);
+      setCountedValues({});
+      setAddedValues({});
+      setPriceValues({});
+      fetchStocksForProducts(products.map((p) => p.id));
+      addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`, {
+        productCount: totalProducts,
+        totalStock,
+        hasImages: products.filter(p => p.imageUrl).length,
+      });
+      if (apiConfig.showProductImages) {
+        const idsToLoad = products
+          .filter(p => !p.imageUrl)
+          .slice(0, 24)
+          .map(p => p.id);
+        if (idsToLoad.length > 0) {
+          const concurrency = 5;
+          for (let i = 0; i < idsToLoad.length; i += concurrency) {
+            const batch = idsToLoad.slice(i, i + concurrency);
+            await Promise.all(batch.map(id => loadProductImage(id)));
+          }
+        }
+      }
+    } catch (error) {
+      addLog('error', 'PRODUCTS_API', 'Ürünler yüklenirken hata', error);
+      let errorMessage = 'Ürünler yüklenirken hata oluştu!';
+      if (error instanceof Error) {
+        errorMessage += `\n\nDetay: ${error.message}`;
+      }
+      alert(errorMessage);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+
+
+  const applyChanges = async () => {
+
+    const today = new Date().toLocaleDateString('tr-TR');
+
+    const newChanges: StockChange[] = [];
+
+    const stockUpdates: Array<{ productId: string; newStock: number }> = [];
+
+    const priceUpdates: Array<{ productId: string; newPrice: number }> = [];
+
+
+
+    const updatedStockData = stockData.map(item => {
+
+      const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
+
+      const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+
+      const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+
+
+
+      let finalCount = item.count;
+
+      if (countedValue !== null) {
+
+        finalCount = countedValue + (addedValue as number);
+
+      } else if (addedValue > 0) {
+
+        finalCount = item.count + addedValue;
+
+      }
+
+
+
+      const stockChanged = finalCount !== item.count;
+
+      const previousPrice = typeof item.price === 'number' ? item.price : undefined;
+
+      const priceChanged = pendingPrice !== null && (previousPrice === undefined || Math.abs(pendingPrice - previousPrice) > 0.0001);
+
+
+
+      if (stockChanged) {
+
+        stockUpdates.push({
+
+          productId: item.id,
+
+          newStock: finalCount
+
+        });
+
+      }
+
+
+
+      if (priceChanged) {
+
+        priceUpdates.push({
+
+          productId: item.id,
+
+          newPrice: pendingPrice as number
+
+        });
+
+      }
+
+
+
+      if (stockChanged || priceChanged) {
+
+        let reason = '';
+
+        if (stockChanged && priceChanged) {
+
+          reason = 'Stok + Fiyat';
+
+        } else if (stockChanged) {
+
+          if (countedValue !== null && addedValue > 0) {
+
+            reason = 'Sayim + Ekleme';
+
+          } else if (countedValue !== null) {
+
+            reason = 'Sayim';
+
+          } else {
+
+            reason = 'Ekleme';
+
+          }
+
+        } else {
+
+          reason = 'Fiyat';
+
+        }
+
+
+
+        const changeValue = stockChanged ? finalCount - item.count : 0;
+
+        const computedPriceChange = priceChanged
+
+          ? (previousPrice !== undefined ? (pendingPrice as number) - previousPrice : pendingPrice as number)
+
+          : undefined;
+
+
+
+        newChanges.push({
+
+          id: item.id,
+
+          date: today,
+
+          productName: item.name,
+
+          change: changeValue,
+
+          reason,
+
+          previousCount: item.count,
+
+          countedValue: countedValue ?? undefined,
+
+          addedValue: addedValue as number,
+
+          finalCount: finalCount,
+
+          previousPrice,
+
+          newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
+
+          priceChange: computedPriceChange
+
+        });
+
+      }
+
+
+
+      return {
+
+        ...item,
+
+        count: finalCount,
+
+        price: priceChanged ? (pendingPrice as number) : item.price
+
+      };
+
+    });
+
+
+
+    if (stockUpdates.length === 0 && priceUpdates.length === 0) {
+
+      alert('Guncellenecek stok veya fiyat degisikligi bulunamadi!');
+
+      return;
+
+    }
+
+
+
+    const summaryParts: string[] = [];
+
+    if (stockUpdates.length > 0) {
+
+      summaryParts.push(`Stok: ${stockUpdates.length} urun`);
+
+    }
+
+    if (priceUpdates.length > 0) {
+
+      summaryParts.push(`Fiyat: ${priceUpdates.length} urun`);
+
+    }
+
+
+
+    const confirmMessageLines: string[] = [
+
+      `Toplam ${stockUpdates.length + priceUpdates.length} guncelleme uygulanacak.`
+
+    ];
+
+    if (summaryParts.length > 0) {
+
+      confirmMessageLines.push(summaryParts.join('\n'));
+
+    }
+
+    confirmMessageLines.push('Isleme devam etmek istiyor musunuz?');
+
+
+
+    if (!confirm(confirmMessageLines.join('\n\n'))) {
+
+      return;
+
+    }
+
+
+
+    try {
+
+      let stockResults: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+      let priceResults: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+
+
+      if (stockUpdates.length > 0) {
+
+        addLog('info', 'STOCK_BATCH', `${stockUpdates.length} urunun stoku guncelleniyor...`, stockUpdates);
+
+        stockResults = await updateStockBatch(stockUpdates);
+
+      }
+
+
+
+      if (priceUpdates.length > 0) {
+
+        addLog('info', 'PRICE_BATCH', `${priceUpdates.length} urunun fiyati guncelleniyor...`, priceUpdates);
+
+        priceResults = await updatePriceBatch(priceUpdates);
+
+      }
+
+
+
+      const failedStock = stockResults.filter(result => !result.success);
+
+      const successfulStock = stockResults.filter(result => result.success);
+
+      const failedPrice = priceResults.filter(result => !result.success);
+
+      const successfulPrice = priceResults.filter(result => result.success);
+
+
+
+      if (stockUpdates.length > 0) {
+
+        if (failedStock.length > 0) {
+
+          const failedProducts = failedStock.map(f => {
+
+            const product = stockData.find(p => p.id === f.productId);
+
+            return product?.name || f.productId;
+
+          }).join(', ');
+
+          addLog('warning', 'STOCK_BATCH', `Kismi basari: ${successfulStock.length} basarili, ${failedStock.length} basarisiz`, {
+
+            successful: successfulStock.length,
+
+            failed: failedStock.length,
+
+            failedProducts
+
+          });
+
+        } else {
+
+          addLog('success', 'STOCK_BATCH', `Tum stok guncellemeleri basarili: ${successfulStock.length} urun`);
+
+        }
+
+      }
+
+
+
+      if (priceUpdates.length > 0) {
+
+        if (failedPrice.length > 0) {
+
+          const failedProducts = failedPrice.map(f => {
+
+            const product = stockData.find(p => p.id === f.productId);
+
+            return product?.name || f.productId;
+
+          }).join(', ');
+
+          addLog('warning', 'PRICE_BATCH', `Kismi basari: ${successfulPrice.length} basarili, ${failedPrice.length} basarisiz`, {
+
+            successful: successfulPrice.length,
+
+            failed: failedPrice.length,
+
+            failedProducts
+
+          });
+
+        } else {
+
+          addLog('success', 'PRICE_BATCH', `Tum fiyat guncellemeleri basarili: ${successfulPrice.length} urun`);
+
+        }
+
+      }
+
+
+
+      const totalFailures = failedStock.length + failedPrice.length;
+
+      if (totalFailures > 0) {
+
+        const failureLines: string[] = [];
+
+        if (stockUpdates.length > 0) {
+
+          failureLines.push(`Stok - basarili: ${successfulStock.length}, basarisiz: ${failedStock.length}`);
+
+        }
+
+        if (priceUpdates.length > 0) {
+
+          failureLines.push(`Fiyat - basarili: ${successfulPrice.length}, basarisiz: ${failedPrice.length}`);
+
+        }
+
+        alert(`Guncelleme tamamlandi fakat bazi kayitlar basarisiz oldu.\n\n${failureLines.join('\n')}`);
+
+      } else {
+
+        const successLines: string[] = [];
+
+        if (stockUpdates.length > 0) {
+
+          successLines.push(`${successfulStock.length} stok guncellemesi`);
+
+        }
+
+        if (priceUpdates.length > 0) {
+
+          successLines.push(`${successfulPrice.length} fiyat guncellemesi`);
+
+        }
+
+        alert(`Tum guncellemeler basariyla tamamlandi!\n\n${successLines.join('\n')}`);
+
+      }
+
+
+
+      setStockData(updatedStockData);
+
+      setStockChanges(prev => [...prev, ...newChanges]);
+
+      setCountedValues({});
+
+      setAddedValues({});
+
+      setPriceValues({});
+
+    } catch (error) {
+
+      if (stockUpdates.length > 0) {
+
+        addLog('error', 'STOCK_BATCH', 'Kritik hata: Stok guncelleme basarisiz', error);
+
+      }
+
+      if (priceUpdates.length > 0) {
+
+        addLog('error', 'PRICE_BATCH', 'Kritik hata: Fiyat guncelleme basarisiz', error);
+
+      }
+
+      alert(`Guncelleme sirasinda kritik hata olustu!
+
+
+
+Detay: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}
+
+
+
+Lutfen tekrar deneyin.`);
+
+    }
+
+  };
+
+
+
+  const resetAllToZero = () => {
+
+    // If categories are selected, target only those groups; otherwise use current filters
+
+    const filtered = selectedProductGroups.length > 0
+
+      ? stockData.filter(it => selectedProductGroups.includes((it.productGroupId ?? -1)))
+
+      : getFilteredStockData();
+
+    if (filtered.length === 0) {
+
+      alert('Filtreye uyan Ãƒ¼rÃƒ¼n bulunamad?.');
+
+      return;
+
+    }
+
+
+
+    setCountedValues(prev => {
+
+      const next = { ...prev } as { [key: string]: number | '' };
+
+      for (const item of filtered) {
+
+        next[item.id] = 0;
+
+      }
+
+      return next;
+
+    });
+
+
+
+    setAddedValues(prev => {
+
+      const next = { ...prev } as { [key: string]: number | '' };
+
+      for (const item of filtered) {
+
+        next[item.id] = 0;
+
+      }
+
+      return next;
+
+    });
+
+
+
+    addLog('info', 'RESET', `Filtreye uyan ${filtered.length} Ãƒ¼rÃƒ¼n iÃƒ§in say?lan=0 atand?.`, {
+
+      affected: filtered.map(f => f.id)
+
+    });
+
+    alert(`Filtreye uyan ${filtered.length} Ãƒ¼rÃƒ¼n 0 olarak say?ld?.\n\n"De?i?iklikleri Uygula" ile stoklar? 0'a gÃƒ¼ncelleyebilirsiniz.`);
+
+  };
+
+
+
+  const totalStock = stockData.reduce((sum, item) => sum + item.count, 0);
+
+
+
+  // Filter and sort stock data based on search query and product group
+
+  const getFilteredStockData = () => {
+
+    let filteredData = stockData;
+
+
+
+    // Apply product group filter first
+
+    if (activeProductGroupFilter !== null) {
+
+      filteredData = stockData.filter(item => item.productGroupId === activeProductGroupFilter);
+
+    }
+
+
+
+    // Then apply search filter if there's a query
+
+    if (!searchQuery.trim()) {
+
+      return filteredData;
+
+    }
+
+
+
+    const query = searchQuery.toLowerCase().trim();
+
+    
+
+    // Separate exact matches and partial matches
+
+    const exactMatches: StockData[] = [];
+
+    const partialMatches: StockData[] = [];
+
+    
+
+    filteredData.forEach(item => {
+
+      const nameMatch = item.name.toLowerCase();
+
+      const barcodeMatch = item.barcode.toLowerCase();
+
+      
+
+      // Check for exact barcode or exact name match
+
+      if (barcodeMatch === query || nameMatch === query) {
+
+        exactMatches.push(item);
+
+      }
+
+      // Check for partial matches (name contains search query or barcode starts with query)
+
+      else if (nameMatch.includes(query) || barcodeMatch.includes(query)) {
+
+        partialMatches.push(item);
+
+      }
+
+    });
+
+    
+
+    // Return exact matches first, then partial matches
+
+    return [...exactMatches, ...partialMatches];
+
+  };
+
+
+
+  const filteredStockData = getFilteredStockData();
+
+
+
+  const clearSearch = () => {
+
+    setSearchQuery('');
+
+  };
+
+
+
+  // Get dates that have stock changes
+
+  const getDatesWithChanges = (): Date[] => {
+
+    const uniqueDates = [...new Set(stockChanges.map(change => change.date))];
+
+    return uniqueDates.map(dateStr => {
+
+      const [day, month, year] = dateStr.split('.');
+
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+    });
+
+  };
+
+
+
+  // Get daily report for a specific date
+
+  const getDailyReport = (date: Date): DailyReport => {
+
+
+
+    const dateStr = date.toLocaleDateString('tr-TR');
+
+
+
+    const dayChanges = stockChanges.filter(change => change.date === dateStr);
+
+
+
+    
+
+
+
+    const totalCounted = dayChanges.filter(c => c.reason.includes('Say?m')).length;
+
+
+
+    const totalAdded = dayChanges.filter(c => c.reason.includes('Ekleme')).length;
+
+
+
+    const totalChanged = dayChanges.reduce((sum, c) => sum + Math.abs(c.change), 0);
+
+
+
+    const totalPriceChanges = dayChanges.filter(change => {
+
+
+
+      const previous = typeof change.previousPrice === 'number' ? change.previousPrice : undefined;
+
+
+
+      const next = typeof change.newPrice === 'number' ? change.newPrice : undefined;
+
+
+
+      if (previous === undefined && next === undefined) return false;
+
+
+
+      if (previous === undefined || next === undefined) return true;
+
+
+
+      return Math.abs(next - previous) > 0.0001;
+
+
+
+    }).length;
+
+
+
+    
+
+
+
+    return {
+
+
+
+      date: dateStr,
+
+
+
+      totalProducts: dayChanges.length,
+
+
+
+      totalCounted,
+
+
+
+      totalAdded,
+
+
+
+      totalChanged,
+
+
+
+      totalPriceChanges,
+
+
+
+      changes: dayChanges
+
+
+
+    };
+
+
+
+  };
+
+
+
+
+
+
+
+  // Get unique dates sorted by date
+
+  const getUniqueDatesSorted = (): string[] => {
+
+    const uniqueDates = [...new Set(stockChanges.map(change => change.date))];
+
+    return uniqueDates.sort((a, b) => {
+
+      const [dayA, monthA, yearA] = a.split('.').map(Number);
+
+      const [dayB, monthB, yearB] = b.split('.').map(Number);
+
+      const dateA = new Date(yearA, monthA - 1, dayA);
+
+      const dateB = new Date(yearB, monthB - 1, dayB);
+
+      return dateB.getTime() - dateA.getTime(); // Most recent first
+
+    });
+
+  };
+
+
+
+  // Navigation functions
+
+  const navigateToDate = (direction: 'prev' | 'next') => {
+
+    const sortedDates = getUniqueDatesSorted();
+
+    if (sortedDates.length === 0) return;
+
+
+
+    let newIndex = currentDateIndex;
+
+    if (direction === 'prev' && currentDateIndex > 0) {
+
+      newIndex = currentDateIndex - 1;
+
+    } else if (direction === 'next' && currentDateIndex < sortedDates.length - 1) {
+
+      newIndex = currentDateIndex + 1;
+
+    }
+
+
+
+    setCurrentDateIndex(newIndex);
+
+    const [day, month, year] = sortedDates[newIndex].split('.').map(Number);
+
+    setSelectedDate(new Date(year, month - 1, day));
+
+  };
+
+
+
+  // Handle keyboard navigation
+
+  const handleKeyPress = (e: KeyboardEvent) => {
+
+    if (currentPage === 'history' && selectedDate) {
+
+      if (e.key === 'ArrowLeft') {
+
+        navigateToDate('prev');
+
+      } else if (e.key === 'ArrowRight') {
+
+        navigateToDate('next');
+
+      }
+
+    }
+
+  };
+
+
+
+  // Add keyboard event listener
+
+  React.useEffect(() => {
+
+    document.addEventListener('keydown', handleKeyPress);
+
+    return () => document.removeEventListener('keydown', handleKeyPress);
+
+  }, [currentPage, selectedDate, currentDateIndex]);
+
+
+
+  // Initialize app with welcome log
+
+  React.useEffect(() => {
+
+    addLog('success', 'SYSTEM', 'Stok YÃƒ¶netim Sistemi ba?lat?ld?', {
+
+      version: '1.0.0',
+
+      timestamp: new Date().toISOString(),
+
+      userAgent: navigator.userAgent
+
+    });
+
+  }, []);
+
+
+
+  // Handle ESC key for enlarged image modal
+
+  React.useEffect(() => {
+
+    const handleEscKey = (e: KeyboardEvent) => {
+
+      if (e.key === 'Escape' && enlargedImage) {
+
+        setEnlargedImage(null);
+
+      }
+
+    };
+
+
+
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => document.removeEventListener('keydown', handleEscKey);
+
+  }, [enlargedImage]);
+
+
+
+  // Handle paste events for stock page
+
+  React.useEffect(() => {
+
+    const handlePaste = (e: ClipboardEvent) => {
+
+      // Only handle paste on stock page
+
+      if (currentPage !== 'stock') return;
+
+      
+
+      // Don't interfere if user is already focused on an input
+
+      const activeElement = document.activeElement;
+
+      if (activeElement && (
+
+        activeElement.tagName === 'INPUT' || 
+
+        activeElement.tagName === 'TEXTAREA' ||
+
+        activeElement.getAttribute('contenteditable') === 'true'
+
+      )) {
+
+        return;
+
+      }
+
+
+
+      // Get pasted text
+
+      const pastedText = e.clipboardData?.getData('text');
+
+      if (pastedText) {
+
+        e.preventDefault();
+
+        setSearchQuery(pastedText.trim());
+
+        
+
+        // Focus the search input after a short delay
+
+        setTimeout(() => {
+
+          const searchInput = document.querySelector('input[placeholder*="ÃƒÅ“rÃƒ¼n ad? veya barkod"]') as HTMLInputElement;
+
+          if (searchInput) {
+
+            searchInput.focus();
+
+            searchInput.select();
+
+          }
+
+        }, 100);
+
+      }
+
+    };
+
+
+
+    document.addEventListener('paste', handlePaste);
+
+    return () => document.removeEventListener('paste', handlePaste);
+
+  }, [currentPage]);
+
+
+
+  // Download CSV report for a specific date
+
+  const downloadCSVReport = (report: DailyReport) => {
+
+
+
+    const headers = ['Urun Adi', 'Mevcut', 'Sayim', 'Eklenen', 'Fark (Sayim)', 'Toplam', 'Eski Fiyat', 'Yeni Fiyat', 'Fiyat Farki', 'Islem Turu', 'Tarih'];
+
+
+
+    const rows = report.changes.map(change => {
+
+
+
+      const countDifference = change.countedValue !== undefined && change.countedValue !== null
+
+
+
+        ? change.countedValue - change.previousCount
+
+
+
+        : 0;
+
+
+
+      const totalAmount = change.countedValue !== undefined && change.countedValue !== null
+
+
+
+        ? change.countedValue + (change.addedValue || 0)
+
+
+
+        : change.previousCount + (change.addedValue || 0);
+
+
+
+      const previousPrice = typeof change.previousPrice === 'number' ? change.previousPrice : null;
+
+
+
+      const newPrice = typeof change.newPrice === 'number' ? change.newPrice : null;
+
+
+
+      let priceDifference: number | null = null;
+
+
+
+      if (typeof change.priceChange === 'number') {
+
+
+
+        priceDifference = change.priceChange;
+
+
+
+      } else if (previousPrice !== null && newPrice !== null) {
+
+
+
+        priceDifference = newPrice - previousPrice;
+
+
+
+      } else if (previousPrice === null && newPrice !== null) {
+
+
+
+        priceDifference = newPrice;
+
+
+
+      } else if (previousPrice !== null && newPrice === null) {
+
+
+
+        priceDifference = -previousPrice;
+
+
+
+      }
+
+
+
+
+
+
+
+      return [
+
+
+
+        change.productName,
+
+
+
+        change.previousCount.toString(),
+
+
+
+        change.countedValue?.toString() || '-',
+
+
+
+        change.addedValue?.toString() || '0',
+
+
+
+        change.countedValue !== undefined && change.countedValue !== null
+
+
+
+          ? (countDifference > 0 ? '+' : '') + countDifference.toString()
+
+
+
+          : '-',
+
+
+
+        totalAmount.toString(),
+
+
+
+        previousPrice !== null ? previousPrice.toFixed(2) : '-',
+
+
+
+        newPrice !== null ? newPrice.toFixed(2) : '-',
+
+
+
+        priceDifference !== null ? `${priceDifference > 0 ? '+' : ''}${priceDifference.toFixed(2)}` : '-',
+
+
+
+        change.reason,
+
+
+
+        change.date
+
+
+
+      ];
+
+
+
+    });
+
+
+
+
+
+
+
+    const csvContent = [
+
+
+
+      headers.join(','),
+
+
+
+      ...rows.map(row => row.join(','))
+
+
+
+    ].join('\n');
+
+
+
+
+
+
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+
+
+    const link = document.createElement('a');
+
+
+
+    const url = URL.createObjectURL(blob);
+
+
+
+    link.setAttribute('href', url);
+
+
+
+    link.setAttribute('download', `stok_raporu_${report.date.replace(/\./g, '_')}.csv`);
+
+
+
+    link.style.visibility = 'hidden';
+
+
+
+    document.body.appendChild(link);
+
+
+
+    link.click();
+
+
+
+    document.body.removeChild(link);
+
+
+
+  };
+
+
+
+
+
+
+
+  const StockHistoryPage = () => {
+
+    const datesWithChanges = getDatesWithChanges();
+
+    const uniqueDatesSorted = getUniqueDatesSorted();
+
+    const selectedReport = selectedDate ? getDailyReport(selectedDate) : null;
+
+
+
+    const testProductImages = async () => {
+
+      if (!testProductId) return;
+
+      setTestLoading(true);
+
+      setTestResult(null);
+
+      setTestError(null);
+
+      const url = `${apiBase}/v2.0/products/${testProductId}/images`;
+
+      addLog('info', 'IMAGE_TEST', `GÃƒ¶rsel test ba?lat?ld?: ${testProductId}`, { url });
+
+      try {
+
+        const response = await fetch(url, {
+
+          headers: {
+
+            'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          },
+
+        });
+
+        if (!response.ok) {
+
+          throw new Error(`HTTP ${response.status}`);
+
+        }
+
+        const imageData = await response.json();
+
+        const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? []);
+
+        addLog('success', 'IMAGE_TEST', `Bulunan gÃƒ¶rsel say?s?: ${dataArray.length}`);
+
+        setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
+
+      } catch (err) {
+
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+
+        addLog('error', 'IMAGE_TEST', `GÃƒ¶rsel test hatas?: ${msg}`);
+
+        setTestError(msg);
+
+      } finally {
+
+        setTestLoading(false);
+
+      }
+
+    };
+
+
+
+    return (
+
+      <div className="space-y-6">
+
+        <div>
+
+          <h2>Stok Say?m GeÃƒ§mi?i</h2>
+
+          <p className="text-muted-foreground">G?nl?k stok de?i?ikliklerini g?r?nt?leyin (&lt; &gt; tu?lar? ile navigasyon)</p>
+
+        </div>
+
+
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+
+          {/* Calendar/Date List */}
+
+          <Card className="p-3 sm:p-4">
+
+            <div className="space-y-4">
+
+              <div className="flex items-center justify-between">
+
+                <div className="flex items-center gap-2">
+
+                  {showDateList ? <List className="h-5 w-5" /> : <CalendarIcon className="h-5 w-5" />}
+
+                  <h3>{showDateList ? 'Say?m GÃƒ¼nleri' : 'Say?m Takvimi'}</h3>
+
+                </div>
+
+                <Button
+
+                  variant="outline"
+
+                  size="sm"
+
+                  onClick={() => setShowDateList(!showDateList)}
+
+                  className="flex items-center gap-2"
+
+                >
+
+                  {showDateList ? <CalendarIcon className="h-4 w-4" /> : <List className="h-4 w-4" />}
+
+                  {showDateList ? 'Takvim' : 'Liste'}
+
+                </Button>
+
+              </div>
+
+
+
+              {showDateList ? (
+
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+
+                  {uniqueDatesSorted.length === 0 ? (
+
+                    <p className="text-muted-foreground text-center py-8">HenÃƒ¼z say?m yap?lmam??</p>
+
+                  ) : (
+
+                    uniqueDatesSorted.map((dateStr, index) => {
+
+                      const [day, month, year] = dateStr.split('.').map(Number);
+
+                      const date = new Date(year, month - 1, day);
+
+                      const isSelected = selectedDate && selectedDate.toLocaleDateString('tr-TR') === dateStr;
+
+                      const report = getDailyReport(date);
+
+                      
+
+                      return (
+
+                        <div
+
+                          key={dateStr}
+
+                          onClick={() => {
+
+                            setSelectedDate(date);
+
+                            setCurrentDateIndex(index);
+
+                          }}
+
+                          className={`p-3 rounded cursor-pointer border transition-colors ${
+
+                            isSelected 
+
+                              ? 'bg-primary text-primary-foreground border-primary' 
+
+                              : 'hover:bg-muted border-border'
+
+                          }`}
+
+                        >
+
+                          <div className="flex items-center justify-between">
+
+                            <div>
+
+                              <p className="font-medium">{dateStr}</p>
+
+                              <p className="text-sm opacity-80">
+
+                                {report.totalProducts} Ãƒ¼rÃƒ¼n, {report.totalChanged} de?i?iklik
+
+                              </p>
+
+                            </div>
+
+                            <div className="text-right">
+
+                              <p className="text-sm">Say?lan: {report.totalCounted}</p>
+
+                              <p className="text-sm">Eklenen: {report.totalAdded}</p>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                      );
+
+                    })
+
+                  )}
+
+                </div>
+
+              ) : (
+
+                <>
+
+                  <Calendar
+
+                    mode="single"
+
+                    selected={selectedDate}
+
+                    onSelect={(date) => {
+
+                      if (date) {
+
+                        setSelectedDate(date);
+
+                        const dateStr = date.toLocaleDateString('tr-TR');
+
+                        const index = uniqueDatesSorted.indexOf(dateStr);
+
+                        if (index !== -1) setCurrentDateIndex(index);
+
+                      }
+
+                    }}
+
+                    modifiers={{
+
+                      hasChanges: datesWithChanges
+
+                    }}
+
+                    modifiersStyles={{
+
+                      hasChanges: {
+
+                        backgroundColor: 'hsl(var(--primary))',
+
+                        color: 'hsl(var(--primary-foreground))',
+
+                        fontWeight: 'bold'
+
+                      }
+
+                    }}
+
+                    className="rounded-md border"
+
+                  />
+
+                  <button
+
+                    onClick={() => setShowDateList(true)}
+
+                    className="text-sm text-primary hover:underline cursor-pointer"
+
+                  >
+
+                    <div className="flex items-center gap-2">
+
+                      <div className="w-3 h-3 bg-primary rounded"></div>
+
+                      <span>Say?m yap?lan gÃƒ¼nler</span>
+
+                    </div>
+
+                  </button>
+
+                </>
+
+              )}
+
+            </div>
+
+          </Card>
+
+
+
+          {/* Daily Report */}
+
+          <Card className="p-3 sm:p-4">
+
+            {selectedReport ? (
+
+              <div className="space-y-4">
+
+                <div className="flex items-center justify-between">
+
+                  <div className="flex items-center gap-2">
+
+                    <Button
+
+                      variant="outline"
+
+                      size="sm"
+
+                      onClick={() => navigateToDate('prev')}
+
+                      disabled={currentDateIndex === 0}
+
+                    >
+
+                      <ChevronLeft className="h-4 w-4" />
+
+                    </Button>
+
+                    <h3>GÃƒ¼nlÃƒ¼k Rapor - {selectedReport.date}</h3>
+
+                    <Button
+
+                      variant="outline"
+
+                      size="sm"
+
+                      onClick={() => navigateToDate('next')}
+
+                      disabled={currentDateIndex === uniqueDatesSorted.length - 1}
+
+                    >
+
+                      <ChevronRight className="h-4 w-4" />
+
+                    </Button>
+
+                  </div>
+
+                  <Button
+
+                    size="sm"
+
+                    onClick={() => downloadCSVReport(selectedReport)}
+
+                    className="flex items-center gap-2"
+
+                  >
+
+                    <Download className="h-4 w-4" />
+
+                    CSV ?ndir
+
+                  </Button>
+
+                </div>
+
+
+
+                {/* Summary Stats */}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+
+                  <div className="bg-muted p-2 sm:p-3 rounded">
+
+                    <p className="text-xs sm:text-sm text-muted-foreground">Toplam Urun</p>
+
+                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalProducts}</p>
+
+                  </div>
+
+                  <div className="bg-muted p-2 sm:p-3 rounded">
+
+                    <p className="text-xs sm:text-sm text-muted-foreground">Sayilan Urun</p>
+
+                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalCounted}</p>
+
+                  </div>
+
+                  <div className="bg-muted p-2 sm:p-3 rounded">
+
+                    <p className="text-xs sm:text-sm text-muted-foreground">Eklenen Urun</p>
+
+                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalAdded}</p>
+
+                  </div>
+
+                  <div className="bg-muted p-2 sm:p-3 rounded">
+
+                    <p className="text-xs sm:text-sm text-muted-foreground">Toplam Degisim</p>
+
+                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalChanged}</p>
+
+                  </div>
+
+                  <div className="bg-muted p-2 sm:p-3 rounded">
+
+                    <p className="text-xs sm:text-sm text-muted-foreground">Fiyat Degisimi</p>
+
+                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalPriceChanges}</p>
+
+                  </div>
+
+                </div>
+
+
+
+                {/* Changes List */}
+
+
+
+                <div className="space-y-2">
+
+                  <h4>De?i?iklik Detaylar?</h4>
+
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+
+                    {selectedReport.changes.map((change, index) => {
+
+                      const priceDelta = typeof change.priceChange === 'number'
+
+                        ? change.priceChange
+
+                        : typeof change.newPrice === 'number' && typeof change.previousPrice === 'number'
+
+                          ? change.newPrice - change.previousPrice
+
+                          : typeof change.newPrice === 'number'
+
+                            ? change.newPrice
+
+                            : typeof change.previousPrice === 'number'
+
+                              ? -change.previousPrice
+
+                              : null;
+
+                      return (
+
+                        <div key={index} className="py-2 px-3 bg-muted rounded">
+
+                        <div className="flex items-center justify-between mb-2">
+
+                          <div className="flex-1">
+
+                            <p className="text-sm font-medium">{change.productName}</p>
+
+                            <p className="text-xs text-muted-foreground">{change.reason}</p>
+
+                          </div>
+
+                          <div className={`px-2 py-1 rounded text-sm ${
+
+                            change.change > 0 
+
+                              ? 'bg-green-100 text-green-800' 
+
+                              : 'bg-red-100 text-red-800'
+
+                          }`}>
+
+                            {change.change > 0 ? '+' : ''}{change.change}
+
+                          </div>
+
+                        </div>
+
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2 text-xs">
+
+                          <div className="text-center">
+
+                            <p className="text-muted-foreground">Mevcut</p>
+
+                            <p className="font-medium">{change.previousCount}</p>
+
+                          </div>
+
+                          <div className="text-center">
+
+                            <p className="text-muted-foreground">Sayim</p>
+
+                            <p className="font-medium">{change.countedValue ?? '-'}</p>
+
+                          </div>
+
+                          <div className="text-center hidden sm:block">
+
+                            <p className="text-muted-foreground">Eklenen</p>
+
+                            <p className="font-medium">{change.addedValue || 0}</p>
+
+                          </div>
+
+                          <div className="text-center hidden sm:block">
+
+                            <p className="text-muted-foreground">Fark</p>
+
+                            <p className={`font-medium ${
+
+                              change.countedValue !== undefined && change.countedValue !== null
+
+                                ? (change.countedValue - change.previousCount > 0 ? 'text-green-600' : 
+
+                                   change.countedValue - change.previousCount < 0 ? 'text-red-600' : 'text-muted-foreground')
+
+                                : 'text-muted-foreground'
+
+                            }`}>
+
+                              {change.countedValue !== undefined && change.countedValue !== null
+
+                                ? (change.countedValue - change.previousCount > 0 ? '+' : '') + (change.countedValue - change.previousCount)
+
+                                : '-'
+
+                              }
+
+                            </p>
+
+                          </div>
+
+                          <div className="text-center">
+
+                            <p className="text-muted-foreground">Toplam</p>
+
+                            <p className="font-medium">
+
+                              {change.countedValue !== undefined && change.countedValue !== null
+
+                                ? change.countedValue + (change.addedValue || 0)
+
+                                : change.previousCount + (change.addedValue || 0)
+
+                              }
+
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                        {(change.previousPrice !== undefined || change.newPrice !== undefined) && (
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2 text-xs mt-2">
+
+                            <div className="text-center">
+
+                              <p className="text-muted-foreground">Eski Fiyat</p>
+
+                              <p className="font-medium">{formatPrice(change.previousPrice ?? null)}</p>
+
+                            </div>
+
+                            <div className="text-center">
+
+                              <p className="text-muted-foreground">Yeni Fiyat</p>
+
+                              <p className="font-medium">{formatPrice(change.newPrice ?? null)}</p>
+
+                            </div>
+
+                            <div className="text-center">
+
+                              <p className="text-muted-foreground">Fiyat Farki</p>
+
+                              <p className={`font-medium ${
+
+                                priceDelta !== null
+
+                                  ? priceDelta > 0 ? 'text-green-600' :
+
+                                    priceDelta < 0 ? 'text-red-600' : 'text-muted-foreground'
+
+                                  : 'text-muted-foreground'
+
+                              }`}>
+
+                                {priceDelta !== null
+
+                                  ? `${priceDelta > 0 ? '+' : ''}${priceDelta.toFixed(2)}`
+
+                                  : '-'
+
+                                }
+
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+                      );
+
+                    })}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <div className="text-center py-8">
+
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+
+                <p className="text-muted-foreground">GÃƒ¼nlÃƒ¼k rapor gÃƒ¶rmek iÃƒ§in {showDateList ? 'listeden' : 'takvimden'} bir tarih seÃƒ§in</p>
+
+                {uniqueDatesSorted.length === 0 && (
+
+                  <p className="text-sm text-muted-foreground mt-2">HenÃƒ¼z hiÃƒ§ say?m yap?lmam??</p>
+
+                )}
+
+              </div>
+
+            )}
+
+          </Card>
+
+        </div>
+
+
+
+        {/* All Changes History */}
+
+        <Card className="p-4">
+
+          <h3 className="mb-4">TÃƒ¼m De?i?iklikler</h3>
+
+          {stockChanges.length === 0 ? (
+
+            <p className="text-muted-foreground text-center py-8">HenÃƒ¼z stok de?i?ikli?i yok</p>
+
+          ) : (
+
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+
+              {stockChanges.slice().reverse().map((change, index) => (
+
+                <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
+
+                  <div className="flex-1">
+
+                    <p className="text-sm text-muted-foreground">{change.date}</p>
+
+                    <p>{change.productName}</p>
+
+                    <p className="text-xs text-muted-foreground">{change.reason}</p>
+
+                    <div className="text-xs text-muted-foreground mt-1 space-y-1">
+
+                      <div>
+
+                        Mevcut: {change.previousCount} ? Son: {change.finalCount}
+
+                        {change.countedValue !== undefined && ` (Say?m: ${change.countedValue})`}
+
+                        {change.addedValue ? ` (Eklenen: ${change.addedValue})` : ''}
+
+                      </div>
+
+                      {(change.previousPrice !== undefined || change.newPrice !== undefined) && (
+
+                        <div>
+
+                          Fiyat: {formatPrice(change.previousPrice ?? null)} ? {formatPrice(change.newPrice ?? null)}
+
+                          {typeof change.priceChange === 'number' && ` (${change.priceChange > 0 ? '+' : ''}${change.priceChange.toFixed(2)})`}
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+                  </div>
+
+                  <div className={`px-3 py-1 rounded ${
+
+                    change.change > 0 
+
+                      ? 'bg-green-100 text-green-800' 
+
+                      : 'bg-red-100 text-red-800'
+
+                  }`}>
+
+                    {change.change > 0 ? '+' : ''}{change.change}
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          )}
+
+        </Card>
+
+      </div>
+
+    );
+
+  };
+
+
+
+  const SettingsPage = () => {
+
+    const [logFilter, setLogFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
+
+    // GÃƒ¶rsel test durumlar?
+
+    const [testProductId, setTestProductId] = useState('');
+
+    const [testLoading, setTestLoading] = useState(false);
+
+    const [testResult, setTestResult] = useState<any>(null);
+
+    const [testError, setTestError] = useState<string | null>(null);
+
+    
+
+    const filteredLogs = systemLogs.filter(log => 
+
+      logFilter === 'all' || log.level === logFilter
+
+    );
+
+
+
+    const clearLogs = () => {
+
+      if (confirm('TÃƒ¼m loglar? temizlemek istedi?inizden emin misiniz?')) {
+
+        setSystemLogs([]);
+
+        addLog('info', 'SYSTEM', 'Loglar temizlendi');
+
+      }
+
+    };
+
+
+
+    const copyLogsToClipboard = () => {
+
+      const logsText = filteredLogs.map(log => 
+
+        `[${log.timestamp}] [${log.level.toUpperCase()}] [${log.category}] ${log.message}${log.details ? '\n  Details: ' + JSON.stringify(log.details, null, 2) : ''}`
+
+      ).join('\n\n');
+
+      
+
+      navigator.clipboard.writeText(logsText).then(() => {
+
+        addLog('success', 'SYSTEM', `${filteredLogs.length} log kopyaland?`);
+
+      }).catch(() => {
+
+        addLog('error', 'SYSTEM', 'Loglar kopyalan?rken hata olu?tu');
+
+      });
+
+    };
+
+
+
+    return (
+
+      <div className="space-y-6">
+
+        <div>
+
+          <h2>Sistem Ayarlar?</h2>
+
+          <p className="text-muted-foreground">API ba?lant? ayarlar?n? ve sistem parametrelerini yap?land?r?n</p>
+
+        </div>
+
+
+
+        {/* API Configuration */}
+
+        <Card className="p-6">
+
+          <h3 className="mb-4">API Ba?lant? Ayarlar?</h3>
+
+          <div className="space-y-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div>
+
+                <Label htmlFor="serverIP">Sunucu IP Adresi</Label>
+
+                <Input
+
+                  id="serverIP"
+
+                  value={apiConfig.serverIP}
+
+                  onChange={(e) => setApiConfig(prev => ({ ...prev, serverIP: e.target.value }))}
+
+                  placeholder="192.168.1.5"
+
+                />
+
+              </div>
+
+              <div>
+
+                <Label htmlFor="endpoint">API Endpoint</Label>
+
+                <Input
+
+                  id="endpoint"
+
+                  value={apiConfig.endpoint}
+
+                  onChange={(e) => setApiConfig(prev => ({ ...prev, endpoint: e.target.value }))}
+
+                  placeholder="/v2.0/products"
+
+                />
+
+              </div>
+
+            </div>
+
+
+
+            <div>
+
+              <Label htmlFor="priceEndpoint">Fiyat Endpoint</Label>
+
+              <Input
+
+                id="priceEndpoint"
+
+                value={apiConfig.priceEndpoint}
+
+                onChange={(e) => setApiConfig(prev => ({ ...prev, priceEndpoint: e.target.value }))}
+
+                placeholder="/price"
+
+              />
+
+            </div>
+
+
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div>
+
+                <Label htmlFor="username">Kullan?c? Ad?</Label>
+
+                <Input
+
+                  id="username"
+
+                  value={apiConfig.username}
+
+                  onChange={(e) => setApiConfig(prev => ({ ...prev, username: e.target.value }))}
+
+                  placeholder="kullan?c? ad?"
+
+                />
+
+              </div>
+
+              <div>
+
+                <Label htmlFor="password">Ã…ifre</Label>
+
+                <div className="relative">
+
+                  <Input
+
+                    id="password"
+
+                    type={showPassword ? "text" : "password"}
+
+                    value={apiConfig.password}
+
+                    onChange={(e) => setApiConfig(prev => ({ ...prev, password: e.target.value }))}
+
+                    placeholder="?ifre"
+
+                    className="pr-10"
+
+                  />
+
+                  <Button
+
+                    type="button"
+
+                    variant="ghost"
+
+                    size="sm"
+
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+
+                    onClick={() => setShowPassword(!showPassword)}
+
+                  >
+
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+
+                  </Button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+
+            <div>
+
+              <Label htmlFor="paginationLimit">Sayfa Ba?? ÃƒÅ“rÃƒ¼n Say?s?</Label>
+
+              <Select
+
+                value={apiConfig.paginationLimit.toString()}
+
+                onValueChange={(value) => setApiConfig(prev => ({ ...prev, paginationLimit: parseInt(value) }))}
+
+              >
+
+                <SelectTrigger className="w-48">
+
+                  <SelectValue />
+
+                </SelectTrigger>
+
+                <SelectContent>
+
+                  <SelectItem value="20">20</SelectItem>
+
+                  <SelectItem value="50">50</SelectItem>
+
+                  <SelectItem value="100">100</SelectItem>
+
+                  <SelectItem value="500">500</SelectItem>
+
+                </SelectContent>
+
+              </Select>
+
+            </div>
+
+
+
+            <div className="space-y-4">
+
+              <div className="flex items-center space-x-2">
+
+                <Checkbox
+
+                  id="includeDeleted"
+
+                  checked={apiConfig.includeDeleted}
+
+                  onCheckedChange={(checked) => 
+
+                    setApiConfig(prev => ({ ...prev, includeDeleted: checked as boolean }))
+
+                  }
+
+                />
+
+                <Label htmlFor="includeDeleted">
+
+                  Silinmi? ÃƒÅ“rÃƒ¼nler
+
+                </Label>
+
+              </div>
+
+              
+
+              <div className="flex items-center space-x-2">
+
+                <Checkbox
+
+                  id="showProductImages"
+
+                  checked={apiConfig.showProductImages}
+
+                  onCheckedChange={(checked) => 
+
+                    setApiConfig(prev => ({ ...prev, showProductImages: checked as boolean }))
+
+                  }
+
+                />
+
+                <Label htmlFor="showProductImages">
+
+                  ÃƒÅ“rÃƒ¼n Foto?raflar?n? GÃƒ¶ster
+
+                </Label>
+
+              </div>
+
+              
+
+
+
+              <div>
+
+                <Label htmlFor="baseParams">Temel Parametreler</Label>
+
+                <Input
+
+                  id="baseParams"
+
+                  value={apiConfig.baseParams}
+
+                  onChange={(e) => setApiConfig(prev => ({ ...prev, baseParams: e.target.value }))}
+
+                  placeholder="EnableStock=true&Pagination.IsScroll=true"
+
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </Card>
+
+
+
+        {/* Image Debug/Test */}
+
+        <Card className="p-6">
+
+          <h3 className="mb-4">GÃƒ¶rsel Test</h3>
+
+          <div className="space-y-3">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:items-end">
+
+              <div className="md:col-span-2">
+
+                <Label htmlFor="testProductId">ÃƒÅ“rÃƒ¼n ID</Label>
+
+                <Input
+
+                  id="testProductId"
+
+                  placeholder="Ãƒ¶r. 48"
+
+                  value={testProductId}
+
+                  onChange={(e) => setTestProductId(e.target.value)}
+
+                />
+
+              </div>
+
+              <div>
+
+                <Button onClick={testProductImages} disabled={!testProductId || testLoading} className="w-full">
+
+                  {testLoading ? 'Test ediliyor...' : 'Test Et'}
+
+                </Button>
+
+              </div>
+
+            </div>
+
+
+
+            {testError && (
+
+              <div className="text-sm text-red-600">Hata: {testError}</div>
+
+            )}
+
+            {testResult && (
+
+              <div className="space-y-2">
+
+                <div className="text-sm">
+
+                  <div>?stek URL: <span className="font-mono break-all">{testResult.requestUrl}</span></div>
+
+                  <div>Bulunan gÃƒ¶rsel say?s?: <b>{testResult.count}</b></div>
+
+                </div>
+
+                <details>
+
+                  <summary className="cursor-pointer text-sm text-muted-foreground">Ham JSON</summary>
+
+                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">{JSON.stringify(testResult.raw, null, 2)}</pre>
+
+                </details>
+
+              </div>
+
+            )}
+
+          </div>
+
+        </Card>
+
+
+
+        {/* Product Categories */}
+
+        <Card className="p-6">
+
+          <div className="flex items-center justify-between mb-4">
+
+            <h3>ÃƒÅ“rÃƒ¼n Kategorileri</h3>
+
+            <Button
+
+              onClick={fetchProductGroups}
+
+              variant="outline"
+
+              size="sm"
+
+              className="flex items-center gap-2"
+
+            >
+
+              <RefreshCw className="h-4 w-4" />
+
+              Kategorileri YÃƒ¼kle
+
+            </Button>
+
+          </div>
+
+          
+
+          {productGroups.length > 0 ? (
+
+            <div className="space-y-4">
+
+              <div>
+
+                <Label>Stok Sayfas?nda GÃƒ¶sterilecek Kategoriler</Label>
+
+                <p className="text-sm text-muted-foreground mb-3">
+
+                  SeÃƒ§ilen kategoriler stok sayfas?nda filtre butonlar? olarak gÃƒ¶rÃƒ¼necek
+
+                </p>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+                  {productGroups.map((group) => (
+
+                    <div key={group.id} className="flex items-center space-x-2">
+
+                      <Checkbox
+
+                        id={`group-${group.id}`}
+
+                        checked={selectedProductGroups.includes(group.id)}
+
+                        onCheckedChange={(checked) => {
+
+                          if (checked) {
+
+                            setSelectedProductGroups(prev => [...prev, group.id]);
+
+                          } else {
+
+                            setSelectedProductGroups(prev => prev.filter(id => id !== group.id));
+
+                          }
+
+                        }}
+
+                      />
+
+                      <Label htmlFor={`group-${group.id}`} className="text-sm">
+
+                        {group.name}
+
+                      </Label>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              </div>
+
+              
+
+              {selectedProductGroups.length > 0 && (
+
+                <div className="p-3 bg-muted rounded">
+
+                  <p className="text-sm font-medium mb-2">SeÃƒ§ilen Kategoriler:</p>
+
+                  <div className="flex flex-wrap gap-2">
+
+                    {selectedProductGroups.map((groupId) => {
+
+                      const group = productGroups.find(g => g.id === groupId);
+
+                      return group ? (
+
+                        <span key={groupId} className="px-2 py-1 bg-primary text-primary-foreground rounded text-xs">
+
+                          {group.name}
+
+                        </span>
+
+                      ) : null;
+
+                    })}
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </div>
+
+          ) : (
+
+            <div className="text-center py-8 text-muted-foreground">
+
+              <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+
+              <p>Kategori bulunamad?</p>
+
+              <p className="text-sm mt-2">Kategorileri yÃƒ¼klemek iÃƒ§in yukar?daki butona t?klay?n</p>
+
+            </div>
+
+          )}
+
+        </Card>
+
+
+
+        {/* Current API URL Preview */}
+
+        <Card className="p-4">
+
+          <h4 className="mb-2">Olu?turulan API URL'leri:</h4>
+
+          <div className="space-y-3">
+
+            <div>
+
+              <p className="text-sm font-medium mb-1">ÃƒÅ“rÃƒ¼nler Listesi (GET):</p>
+
+              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+
+                curl -u {apiConfig.username}:{apiConfig.password} "http://{apiConfig.serverIP}{apiConfig.endpoint}?{apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&{apiConfig.baseParams}&Pagination.Limit={apiConfig.paginationLimit}"
+
+              </div>
+
+            </div>
+
+            <div>
+
+              <p className="text-sm font-medium mb-1">Kategoriler Listesi (GET):</p>
+
+              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+
+                curl -u {apiConfig.username}:{apiConfig.password} "http://{apiConfig.serverIP}{apiConfig.groupsEndpoint}"
+
+              </div>
+
+            </div>
+
+            <div>
+
+              <p className="text-sm font-medium mb-1">Stok GÃƒ¼ncelleme (POST):</p>
+
+              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+
+                curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]"
+
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-2">
+
+                Ãƒ–rnek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/48/25"
+
+              </p>
+
+            </div>
+
+            <div>
+
+              <p className="text-sm font-medium mb-1">Fiyat Guncelleme (POST):</p>
+
+              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+
+                curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}{joinApi(apiConfig.priceEndpoint || '/price')}/[PRODUCT_ID]/[NEW_PRICE]"
+
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-2">
+
+                Ornek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}{joinApi(apiConfig.priceEndpoint || '/price')}/48/199.90"
+
+              </p>
+
+            </div>
+
+          </div>
+
+        </Card>
+
+
+
+        {/* System Logs */}
+
+        <Card className="p-4 sm:p-6">
+
+          <div className="flex items-center justify-between mb-4">
+
+            <div className="flex items-center gap-2">
+
+              <Terminal className="h-5 w-5" />
+
+              <h3>Sistem Loglar?</h3>
+
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <Select value={logFilter} onValueChange={(value: any) => setLogFilter(value)}>
+
+                <SelectTrigger className="w-32">
+
+                  <SelectValue />
+
+                </SelectTrigger>
+
+                <SelectContent>
+
+                  <SelectItem value="all">Hepsi</SelectItem>
+
+                  <SelectItem value="info">Bilgi</SelectItem>
+
+                  <SelectItem value="success">Ba?ar?</SelectItem>
+
+                  <SelectItem value="warning">Uyar?</SelectItem>
+
+                  <SelectItem value="error">Hata</SelectItem>
+
+                </SelectContent>
+
+              </Select>
+
+              <Button
+
+                variant="outline"
+
+                size="sm"
+
+                onClick={copyLogsToClipboard}
+
+                disabled={filteredLogs.length === 0}
+
+                className="flex items-center gap-2"
+
+              >
+
+                <Copy className="h-4 w-4" />
+
+                <span className="hidden sm:inline">Kopyala</span>
+
+              </Button>
+
+              <Button
+
+                variant="outline"
+
+                size="sm"
+
+                onClick={clearLogs}
+
+                disabled={systemLogs.length === 0}
+
+                className="flex items-center gap-2"
+
+              >
+
+                <Trash2 className="h-4 w-4" />
+
+                <span className="hidden sm:inline">Temizle</span>
+
+              </Button>
+
+            </div>
+
+          </div>
+
+
+
+          <div className="bg-black text-green-400 p-3 rounded font-mono text-xs sm:text-sm max-h-80 overflow-y-auto">
+
+            {filteredLogs.length === 0 ? (
+
+              <div className="text-gray-500 text-center py-4">
+
+                {logFilter === 'all' ? 'HenÃƒ¼z log kayd? yok' : `${logFilter} seviyesinde log kayd? yok`}
+
+              </div>
+
+            ) : (
+
+              <div className="space-y-2">
+
+                {filteredLogs.map((log) => (
+
+                  <div key={log.id} className="border-l-2 pl-3 py-1 border-l-gray-600">
+
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+
+                      <span className="text-gray-400 text-xs">{log.timestamp}</span>
+
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+
+                        log.level === 'error' ? 'bg-red-900 text-red-200' :
+
+                        log.level === 'warning' ? 'bg-yellow-900 text-yellow-200' :
+
+                        log.level === 'success' ? 'bg-green-900 text-green-200' :
+
+                        'bg-blue-900 text-blue-200'
+
+                      }`}>
+
+                        {log.level.toUpperCase()}
+
+                      </span>
+
+                      <span className="text-cyan-400 text-xs font-medium">[{log.category}]</span>
+
+                    </div>
+
+                    <div className="mt-1">
+
+                      <span className="text-white">{log.message}</span>
+
+                      {log.details && (
+
+                        <details className="mt-1">
+
+                          <summary className="text-gray-400 cursor-pointer text-xs hover:text-gray-300">
+
+                            Detaylar...
+
+                          </summary>
+
+                          <pre className="mt-1 text-gray-300 text-xs bg-gray-800 p-2 rounded overflow-x-auto">
+
+                            {typeof log.details === 'string' ? log.details : JSON.stringify(log.details, null, 2)}
+
+                          </pre>
+
+                        </details>
+
+                      )}
+
+                    </div>
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            )}
+
+          </div>
+
+
+
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+
+            <span>
+
+              {filteredLogs.length} log gÃƒ¶rÃƒ¼ntÃƒ¼leniyor
+
+              {logFilter !== 'all' && ` (${logFilter} filtreli)`}
+
+            </span>
+
+            <span>Son 100 log saklan?r</span>
+
+          </div>
+
+        </Card>
+
+
+
+        {/* Danger Zone */}
+
+        <Card className="p-6 border-destructive/20">
+
+          <h3 className="mb-4 text-destructive">Tehlikeli ??lemler</h3>
+
+          <div className="space-y-4">
+
+            <div>
+
+              <p className="text-sm text-muted-foreground mb-3">
+
+                Bu i?lem geri al?namaz ve tÃƒ¼m Ãƒ¼rÃƒ¼nlerin stok miktarlar?n? s?f?rlar.
+
+              </p>
+
+              <Button
+
+                variant="destructive"
+
+                onClick={() => {
+
+                  if (confirm("?? UYARI: Bu i?lem geri al?namaz ve bÃƒ¼tÃƒ¼n stok seviyeleri tamamen 0 olacakt?r!\n\nDevam etmek istedi?inizden emin misiniz?")) {
+
+                    if (confirm("?? SON UYARI: Bu i?lem GER? ALINAMAZ!\n\nTÃƒ¼m Ãƒ¼rÃƒ¼nlerin stok miktarlar? 0 olacak. GerÃƒ§ekten devam etmek istiyor musunuz?")) {
+
+                      resetAllToZero();
+
+                    }
+
+                  }
+
+                }}
+
+              >
+
+                TÃƒ¼m Sto?u S?f?rla
+
+              </Button>
+
+            </div>
+
+          </div>
+
+        </Card>
+
+      </div>
+
+    );
+
+  };
+
+
+
+  return (
+
+    <div className="min-h-screen bg-background p-3 sm:p-6">
+
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+
+        {/* Header */}
+
+        <div>
+
+          <h1>{t('app.title')}</h1>
+
+          <p className="text-muted-foreground">{t('app.subtitle')}</p>
+
+        </div>
+
+
+
+        {/* Navigation */}
+
+        <div className="bg-card border rounded-lg p-1 flex">
+
+          <button
+
+            onClick={() => setCurrentPage('stock')}
+
+            className={`flex-1 py-2 px-2 sm:px-4 rounded transition-colors text-sm sm:text-base ${
+
+              currentPage === 'stock' 
+
+                ? 'bg-primary text-primary-foreground' 
+
+                : 'hover:bg-muted'
+
+            }`}
+
+          >
+
+            <span className="hidden sm:inline">{t('nav.stock')}</span>
+
+            <span className="sm:hidden">Stok</span>
+
+          </button>
+
+          <button
+
+            onClick={() => setCurrentPage('history')}
+
+            className={`flex-1 py-2 px-2 sm:px-4 rounded transition-colors text-sm sm:text-base ${
+
+              currentPage === 'history' 
+
+                ? 'bg-primary text-primary-foreground' 
+
+                : 'hover:bg-muted'
+
+            }`}
+
+          >
+
+            <span className="hidden sm:inline">{t('nav.history')}</span>
+
+            <span className="sm:hidden">{t('nav.history')}</span>
+
+          </button>
+
+          <button
+
+            onClick={() => setCurrentPage('settings')}
+
+            className={`flex-1 py-2 px-2 sm:px-4 rounded transition-colors text-sm sm:text-base ${
+
+              currentPage === 'settings' 
+
+                ? 'bg-primary text-primary-foreground' 
+
+                : 'hover:bg-muted'
+
+            }`}
+
+          >
+
+            <Settings className="h-4 w-4 inline mr-0 sm:mr-2" />
+
+            <span className="hidden sm:inline">Ayarlar</span>
+
+          </button>
+
+        </div>
+
+
+
+        {currentPage === 'history' ? (
+
+          <StockHistoryPage />
+
+        ) : currentPage === 'settings' ? (
+
+          <SettingsPage />
+
+        ) : (
+
+          <>
+
+        {/* Header */}
+
+        <div>
+
+          <h1>{t('app.title')}</h1>
+
+          <p className="text-muted-foreground">{t('app.subtitle')}</p>
+
+        </div>
+
+
+
+
+
+
+
+        {/* Controls */}
+
+        <div className="bg-card border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
+
+          <h2>{t('controls.title')}</h2>
+
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+
+            <Button 
+
+              onClick={fetchProducts}
+
+              disabled={isLoadingProducts || isUpdatingStock || isFetchingStocks}
+
+              className="flex items-center gap-2 w-full sm:w-auto"
+
+              size="sm"
+
+            >
+
+              <RefreshCw className={`h-4 w-4 ${isLoadingProducts ? 'animate-spin' : ''}`} />
+
+              <span className="sm:hidden">{isLoadingProducts ? 'YÃƒ¼kleniyor...' : 'Getir'}</span>
+
+              <span className="hidden sm:inline">{isLoadingProducts ? 'YÃƒ¼kleniyor...' : 'ÃƒÅ“rÃƒ¼nleri Getir'}</span>
+
+            </Button>
+
+            <Button 
+
+              onClick={applyChanges}
+
+              disabled={isUpdatingStock || isLoadingProducts || isFetchingStocks}
+
+              variant="default"
+
+              className="w-full sm:w-auto"
+
+              size="sm"
+
+            >
+
+              {isUpdatingStock ? (
+
+                <>
+
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+
+                  <span className="sm:hidden">{updateProgress.current}/{updateProgress.total}</span>
+
+                  <span className="hidden sm:inline">GÃƒ¼ncelleniyor... ({updateProgress.current}/{updateProgress.total})</span>
+
+                </>
+
+              ) : (
+
+                <>
+
+                  <span className="sm:hidden">Uygula</span>
+
+                  <span className="hidden sm:inline">De?i?iklikleri Uygula</span>
+
+                </>
+
+              )}
+
+            </Button>
+
+            <Button 
+
+              onClick={() => setCurrentPage('settings')}
+
+              variant="outline"
+
+              disabled={isUpdatingStock || isLoadingProducts || isFetchingStocks}
+
+              className="flex items-center gap-2 w-full sm:w-auto"
+
+              size="sm"
+
+            >
+
+              <Settings className="h-4 w-4" />
+
+              Ayarlar
+
+            </Button>
+
+          </div>
+
+          
+
+          {/* Progress Bar */}
+
+          {isUpdatingStock && (
+
+            <div className="space-y-2">
+
+              <div className="flex justify-between text-sm">
+
+                <span>Stok gÃƒ¼ncelleniyor...</span>
+
+                <span>{updateProgress.current} / {updateProgress.total}</span>
+
+              </div>
+
+              <Progress 
+
+                value={(updateProgress.current / updateProgress.total) * 100} 
+
+                className="w-full"
+
+              />
+
+            </div>
+
+          )}
+
+        </div>
+
+
+
+        {/* Live Stock Fetch Progress */}
+
+        {isFetchingStocks && (
+
+          <div className="space-y-2">
+
+            <div className="flex justify-between text-sm">
+
+              <span>Stoklar yÃƒ¼kleniyor...</span>
+
+              <span>{stockFetchProgress.current} / {stockFetchProgress.total}</span>
+
+            </div>
+
+            <Progress 
+
+              value={stockFetchProgress.total ? (stockFetchProgress.current / stockFetchProgress.total) * 100 : 0}
+
+              className="w-full"
+
+            />
+
+          </div>
+
+        )}
+
+
+
+        {/* Stock Items */}
+
+        <div className="space-y-3 sm:space-y-4">
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+
+            <h2 className="text-lg sm:text-xl">Stok ÃƒÅ“rÃƒ¼nleri</h2>
+
+            <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-md">
+
+              <div className="relative flex-1">
+
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+
+                <Input
+
+                  type="text"
+
+                  placeholder="ÃƒÅ“rÃƒ¼n ad? veya barkod ile ara..."
+
+                  value={searchQuery}
+
+                  onChange={(e) => setSearchQuery(e.target.value)}
+
+                  className="pl-10 text-sm sm:text-base"
+
+                />
+
+              </div>
+
+              {searchQuery && (
+
+                <Button
+
+                  type="button"
+
+                  variant="outline"
+
+                  size="sm"
+
+                  onClick={clearSearch}
+
+                  className="px-2 sm:px-3 py-2 h-10 text-xs sm:text-sm"
+
+                >
+
+                  Clear
+
+                </Button>
+
+              )}
+
+            </div>
+
+          </div>
+
+
+
+          {/* Category Filter Buttons */}
+
+          {selectedProductGroups.length > 0 && (
+
+            <div className="flex flex-wrap gap-2">
+
+              <Button
+
+                variant={activeProductGroupFilter === null ? "default" : "outline"}
+
+                size="sm"
+
+                onClick={() => setActiveProductGroupFilter(null)}
+
+                className="flex items-center gap-2"
+
+              >
+
+                <Filter className="h-4 w-4" />
+
+                Hepsini GÃƒ¶ster
+
+              </Button>
+
+              {selectedProductGroups.map((groupId) => {
+
+                const group = productGroups.find(g => g.id === groupId);
+
+                if (!group) return null;
+
+
+
+                return (
+
+                  <Button
+
+                    key={groupId}
+
+                    variant={activeProductGroupFilter === groupId ? "default" : "outline"}
+
+                    size="sm"
+
+                    onClick={() => setActiveProductGroupFilter(groupId)}
+
+                  >
+
+                    {group.name}
+
+                  </Button>
+
+                );
+
+              })}
+
+            </div>
+
+          )}
+
+          {(searchQuery || activeProductGroupFilter !== null) && (
+
+            <div className="text-sm text-muted-foreground">
+
+              {filteredStockData.length} Ãƒ¼rÃƒ¼n bulundu
+
+              {searchQuery && `: "${searchQuery}"`}
+
+              {activeProductGroupFilter !== null && (
+
+                <span className="ml-2">
+
+                   Kategori: {productGroups.find(g => g.id === activeProductGroupFilter)?.name}
+
+                </span>
+
+              )}
+
+            </div>
+
+          )}
+
+          {stockData.length === 0 && !isLoadingProducts && (
+
+            <div className="text-center py-12 text-muted-foreground">
+
+              {t('empty.hint')}
+
+            </div>
+
+          )}
+
+          <div className="space-y-3">
+
+            {filteredStockData.map((item) => {
+
+              const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
+
+              const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+
+              const totalAfterCount = countedValue !== null ? countedValue + addedValue : item.count + addedValue;
+
+              const countDiff = countedValue !== null ? countedValue - item.count : null;
+
+              const enteredPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+
+              const currentPrice = typeof item.price === 'number' ? item.price : null;
+
+              const priceDiff = enteredPrice !== null && currentPrice !== null
+
+                ? enteredPrice - currentPrice
+
+                : enteredPrice !== null && currentPrice === null
+
+                  ? enteredPrice
+
+                  : null;
+
+              return (
+
+              <div key={item.id} className="bg-card border rounded-lg p-3 sm:p-4">
+
+                {/* Mobile Layout */}
+
+                <div className="sm:hidden space-y-3">
+
+                  <div className="flex gap-3">
+
+                    {/* Product Image - Mobile */}
+
+                    <div className="w-16 h-16 flex-shrink-0">
+
+                      {item.imageUrl || productImages[item.id] ? (
+
+                        <ImageWithFallback
+
+                          src={item.imageUrl || productImages[item.id]}
+
+                          alt={item.name}
+
+                          className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+
+                          onClick={() => setEnlargedImage({
+
+                            url: item.imageUrl || productImages[item.id],
+
+                            name: item.name
+
+                          })}
+
+                        />
+
+                      ) : (
+
+                        <div className="w-16 h-16 bg-muted rounded border flex flex-col items-center justify-center">
+
+                          <Button
+
+                            variant="ghost"
+
+                            size="sm"
+
+                            onClick={() => loadProductImage(item.id)}
+
+                            className="h-full w-full p-1 text-xs"
+
+                          >
+
+                            <div className="text-center">
+
+                              <ImageIcon className="h-4 w-4 mx-auto mb-1" />
+
+                              <span className="text-xs">GÃƒ¶ster</span>
+
+                            </div>
+
+                          </Button>
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+                    
+
+                    <div className="flex-1">
+
+                      <p className="text-xs text-muted-foreground">ÃƒÅ“rÃƒ¼n</p>
+
+                      <p className="font-medium text-sm">{item.name}</p>
+
+                      <p className="text-xs text-muted-foreground">Barkod: {item.barcode}</p>
+
+                    </div>
+
+                  </div>
+
+                  
+
+                  <div className="grid grid-cols-2 gap-3">
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Mevcut</p>
+
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{item.count}</p>
+
+                    </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Toplam</p>
+
+                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded text-sm">
+
+                        {totalAfterCount}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+
+                  <div className="grid grid-cols-3 gap-2">
+
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Say?lan</p>
+
+                      <NumpadInput
+
+                        value={countedValues[item.id] || ''}
+
+                        onChange={(value) => handleCountedChange(item.id, value)}
+
+                        placeholder="0"
+
+                        defaultValue={item.count}
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Eklenen</p>
+
+                      <NumpadInput
+
+                        value={addedValues[item.id] || ''}
+
+                        onChange={(value) => handleAddedChange(item.id, value)}
+
+                        placeholder="0"
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
+
+                      <p className={`px-1 py-1 rounded text-xs ${
+
+                        countDiff !== null
+
+                          ? countDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            countDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {countDiff !== null
+
+                          ? `${countDiff > 0 ? '+' : ''}${countDiff}`
+
+                          : '-'
+
+                        }
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+
+                  <div className="grid grid-cols-3 gap-2">
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
+
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat</p>
+
+                      <Input
+
+                        value={enteredPrice ?? ''}
+
+                        onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+
+                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+
+                        inputMode="decimal"
+
+                        type="number"
+
+                        step="0.01"
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
+
+                      <p className={`px-1 py-1 rounded text-xs ${
+
+                        priceDiff !== null
+
+                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {priceDiff !== null
+
+                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
+
+                          : '-'
+
+                        }
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+
+                {/* Desktop Layout */}
+
+                <div className="hidden sm:flex items-center justify-between gap-4">
+
+                  <div className="flex items-center gap-3 flex-1">
+
+                    {/* Product Image - Desktop */}
+
+                    <div className="w-16 h-16 flex-shrink-0">
+
+                      {item.imageUrl || productImages[item.id] ? (
+
+                        <ImageWithFallback
+
+                          src={item.imageUrl || productImages[item.id]}
+
+                          alt={item.name}
+
+                          className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+
+                          onClick={() => setEnlargedImage({
+
+                            url: item.imageUrl || productImages[item.id],
+
+                            name: item.name
+
+                          })}
+
+                        />
+
+                      ) : (
+
+                        <div className="w-16 h-16 bg-muted rounded border flex flex-col items-center justify-center">
+
+                          <Button
+
+                            variant="ghost"
+
+                            size="sm"
+
+                            onClick={() => loadProductImage(item.id)}
+
+                            className="h-full w-full p-1 text-xs"
+
+                          >
+
+                            <div className="text-center">
+
+                              <ImageIcon className="h-3 w-3 mx-auto mb-1" />
+
+                              <span className="text-xs">GÃƒ¶ster</span>
+
+                            </div>
+
+                          </Button>
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+                    
+
+                    <div className="flex-1">
+
+                      <p className="text-sm text-muted-foreground">ÃƒÅ“rÃƒ¼n</p>
+
+                      <p>{item.name}</p>
+
+                      <p className="text-sm text-muted-foreground mt-1">Barkod: {item.barcode}</p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm">
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Mevcut</p>
+
+                      <p className="bg-muted px-2 py-1 rounded">{item.count}</p>
+
+                    </div>
+
+
+
+                    <div className="w-20">
+
+                      <p className="text-muted-foreground">Say?lan</p>
+
+                      <NumpadInput
+
+                        value={countedValues[item.id] || ''}
+
+                        onChange={(value) => handleCountedChange(item.id, value)}
+
+                        placeholder="0"
+
+                        defaultValue={item.count}
+
+                      />
+
+                    </div>
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Fark</p>
+
+                      <p className={`px-2 py-1 rounded ${
+
+                        countDiff !== null
+
+                          ? countDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            countDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {countDiff !== null
+
+                          ? `${countDiff > 0 ? '+' : ''}${countDiff}`
+
+                          : '-'
+
+                        }
+
+                      </p>
+
+                    </div>
+
+                    <div className="w-20">
+
+                      <p className="text-muted-foreground">Eklenen</p>
+
+                      <NumpadInput
+
+                        value={addedValues[item.id] || ''}
+
+                        onChange={(value) => handleAddedChange(item.id, value)}
+
+                        placeholder="0"
+
+                      />
+
+                    </div>
+
+
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Toplam</p>
+
+                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded">
+
+                        {totalAfterCount}
+
+                      </p>
+
+                    </div>
+
+                    <div className="text-center min-w-[90px]">
+
+                      <p className="text-muted-foreground">Mevcut Fiyat</p>
+
+                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
+
+                    </div>
+
+                    <div className="w-28">
+
+                      <p className="text-muted-foreground">Yeni Fiyat</p>
+
+                      <Input
+
+                        value={enteredPrice ?? ''}
+
+                        onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+
+                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+
+                        inputMode="decimal"
+
+                        type="number"
+
+                        step="0.01"
+
+                      />
+
+                    </div>
+
+                    <div className="text-center min-w-[90px]">
+
+                      <p className="text-muted-foreground">Fiyat Farki</p>
+
+                      <p className={`px-2 py-1 rounded ${
+
+                        priceDiff !== null
+
+                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {priceDiff !== null
+
+                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
+
+                          : '-'
+
+                        }
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            );
+
+            })}
+
+          </div>
+
+          {filteredStockData.length === 0 && (searchQuery || activeProductGroupFilter !== null) && (
+
+            <div className="text-center py-8 text-muted-foreground">
+
+              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+
+              {searchQuery ? (
+
+                <>
+
+                  <p>"{searchQuery}" aramas? iÃƒ§in sonuÃƒ§ bulunamad?</p>
+
+                  <p className="text-sm mt-2">ÃƒÅ“rÃƒ¼n ad? veya barkod numaras?n? kontrol edin</p>
+
+                </>
+
+              ) : (
+
+                <>
+
+                  <p>Bu kategoride Ãƒ¼rÃƒ¼n bulunamad?</p>
+
+                  <p className="text-sm mt-2">Farkl? bir kategori seÃƒ§in veya "Hepsini GÃƒ¶ster" butonuna t?klay?n</p>
+
+                </>
+
+              )}
+
+            </div>
+
+          )}
+
+        </div>
+
+          </>
+
+        )}
+
+
+
+        {/* Enlarged Image Modal */}
+
+        {enlargedImage && (
+
+          <div 
+
+            className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4"
+
+            onClick={() => setEnlargedImage(null)}
+
+          >
+
+            <div 
+
+              className="relative max-w-4xl max-h-full bg-white rounded-lg overflow-hidden shadow-2xl"
+
+              onClick={(e) => e.stopPropagation()}
+
+            >
+
+              {/* Close button */}
+
+              <Button
+
+                variant="outline"
+
+                size="sm"
+
+                className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white"
+
+                onClick={() => setEnlargedImage(null)}
+
+              >
+
+                <X className="h-4 w-4" />
+
+              </Button>
+
+              
+
+              {/* Product name header */}
+
+              <div className="absolute top-2 left-2 z-10 bg-black/70 text-white px-3 py-1 rounded text-sm">
+
+                {enlargedImage.name}
+
+              </div>
+
+              
+
+              {/* Large image */}
+
+              <ImageWithFallback
+
+                src={enlargedImage.url}
+
+                alt={enlargedImage.name}
+
+                className="max-w-full max-h-[80vh] object-contain cursor-pointer"
+
+                onClick={() => setEnlargedImage(null)}
+
+              />
+
+              
+
+              {/* Tap to close hint for mobile */}
+
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded text-xs sm:hidden">
+
+                Dokunarak kapat
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+      </div>
+
+    </div>
+
+  );
+
+}
+
+
+

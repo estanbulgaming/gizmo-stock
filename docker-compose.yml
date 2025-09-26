@@ -1,0 +1,44 @@
+services:
+  stok-yonetim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stok-yonetim-app
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - stok-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.example.description=Stok Yönetim Sistemi"
+      - "com.example.version=1.0.0"
+
+  # Optional: Add a reverse proxy like nginx if you want to serve multiple apps
+  # nginx-proxy:
+  #   image: nginx:alpine
+  #   container_name: nginx-proxy
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - stok-yonetim
+  #   networks:
+  #     - stok-network
+
+networks:
+  stok-network:
+    driver: bridge
+
+# Optional: Add volumes for persistent data if needed
+# volumes:
+#   stok-data:
+#     driver: local

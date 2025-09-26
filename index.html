@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stok Yönetim Sistemi</title>
+    <meta name="description" content="Yerel stok yönetim ve sayım sistemi" />
+    <meta name="keywords" content="stok, yönetim, sayım, envanter" />
+    <meta name="author" content="Stok Yönetim Sistemi" />
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#030213" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Stok Yönetimi" />
+    
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    
+    <!-- Prevent FOUC -->
+    <style>
+      body { 
+        margin: 0; 
+        background-color: #ffffff; 
+        font-family: system-ui, -apple-system, sans-serif;
+        visibility: hidden;
+      }
+      .app-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #ffffff;
+        visibility: visible;
+      }
+      .app-loading::after {
+        content: "Yükleniyor...";
+        color: #717182;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="app-loading"></div>
+    </div>
+    <script type="module" src="/main.tsx"></script>
+    <script>
+      // Show body when React app loads
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+          document.body.style.visibility = 'visible';
+        }, 100);
+      });
+    </script>
+  </body>
+  </html>
+

@@ -1,0 +1,39 @@
+﻿{
+  "app.title": "Stok Yönetim Sistemi",
+  "app.subtitle": "Envanterinizi yerel olarak yönetin",
+
+  "nav.stock": "Stok Yönetimi",
+  "nav.history": "Sayım Geçmişi",
+  "nav.settings": "Ayarlar",
+
+  "controls.title": "İşlemler",
+  "controls.fetch": "Ürünleri Getir",
+  "controls.apply": "Değişiklikleri Uygula",
+  "controls.apply.short": "Uygula",
+  "controls.updating": "Güncelleniyor...",
+  "controls.loading": "Yükleniyor...",
+
+  "progress.updating": "Stok güncelleniyor...",
+  "progress.fetching": "Stoklar yükleniyor...",
+
+  "list.title": "Stok Ürünleri",
+  "list.search.placeholder": "Ürün adı veya barkod ile ara...",
+
+  "danger.title": "Tehlikeli İşlemler",
+
+  "reset.none": "Filtreye uyan ürün bulunamadı.",
+  "reset.done": "Filtreye uyan {count} ürün 0 olarak sayıldı.\n\n\"Değişiklikleri Uygula\" ile stokları 0'a güncelleyebilirsiniz.",
+
+  "filter.showAll": "Hepsini Göster",
+  "filter.category": "Kategori",
+
+  "item.product": "Ürün",
+  "item.barcode": "Barkod",
+  "item.current": "Mevcut",
+  "item.counted": "Sayılan",
+  "item.added": "Eklenen",
+  "item.diff": "Fark",
+  "item.total": "Toplam",
+
+  "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz"
+}

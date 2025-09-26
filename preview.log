@@ -1,0 +1,10 @@
+
+> stok-yonetim-sistemi@1.0.0 preview
+> vite preview
+
+error when starting preview server:
+Error: listen EPERM: operation not permitted 0.0.0.0:4173
+    at Server.setupListenHandle [as _listen2] (node:net:1917:21)
+    at listenInCluster (node:net:1996:12)
+    at node:net:2205:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
