@@ -4,6 +4,9 @@
   barcode: string;
   count: number;
   price?: number;
+  cost?: number;
+  previousPrice?: number;
+  nextPrice?: number;
   imageUrl?: string;
   productGroupId?: number;
 }

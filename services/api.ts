@@ -1,6 +1,6 @@
 import { ApiConfig } from '../hooks/useApiConfig';
 import { ProductGroup, StockData } from '../types/stock';
-import { extractPrice, getImageSrcFromRecord } from '../utils/product';
+import { extractPrice, extractCost, getImageSrcFromRecord } from '../utils/product';
 
 export interface ApiContext {
   apiConfig: ApiConfig;
@@ -109,15 +109,23 @@ export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise
       ? getImageSrcFromRecord(imageRecord, apiConfig.serverIP)
       : undefined;
     const price = extractPrice(entry);
+    const cost = extractCost(entry);
     const productGroupIdValue = entry['productGroupId'];
+    const productId = String(entry['id'] ?? '');
+
+    // Load price tracking from localStorage
+    const priceTracking = loadPriceTracking(productId);
 
     products.push({
-      id: String(entry['id'] ?? ''),
+      id: productId,
       name: parseString(entry['name'], 'İsimsiz Ürün'),
       barcode: parseString(entry['barcode'], 'Barkod Yok'),
       count: Math.round(parseNumber(entry['stockProductAmount'], 0)),
       imageUrl,
       price: price ?? undefined,
+      cost: cost ?? undefined,
+      previousPrice: priceTracking.previousPrice,
+      nextPrice: priceTracking.nextPrice,
       productGroupId:
         productGroupIdValue == null ? undefined : parseNumber(productGroupIdValue, 0),
     });
@@ -161,4 +169,56 @@ export const fetchProductImageUrl = async (
     getImageSrcFromRecord(mainImage, apiConfig.serverIP) ??
     (fallbackRecord ? getImageSrcFromRecord(fallbackRecord, apiConfig.serverIP) : undefined)
   );
+};
+
+// Price tracking localStorage functions
+const PRICE_TRACKING_KEY = 'gizmo_price_tracking';
+
+interface PriceTracking {
+  previousPrice?: number;
+  nextPrice?: number;
+}
+
+interface PriceTrackingStorage {
+  [productId: string]: PriceTracking;
+}
+
+const loadAllPriceTracking = (): PriceTrackingStorage => {
+  try {
+    const stored = localStorage.getItem(PRICE_TRACKING_KEY);
+    if (!stored) return {};
+    return JSON.parse(stored) as PriceTrackingStorage;
+  } catch {
+    return {};
+  }
+};
+
+const saveAllPriceTracking = (data: PriceTrackingStorage): void => {
+  try {
+    localStorage.setItem(PRICE_TRACKING_KEY, JSON.stringify(data));
+  } catch {
+    // Silently fail if localStorage is unavailable
+  }
+};
+
+export const loadPriceTracking = (productId: string): PriceTracking => {
+  const all = loadAllPriceTracking();
+  return all[productId] ?? {};
+};
+
+export const savePriceTracking = (
+  productId: string,
+  tracking: Partial<PriceTracking>,
+): void => {
+  const all = loadAllPriceTracking();
+  all[productId] = { ...all[productId], ...tracking };
+  saveAllPriceTracking(all);
+};
+
+export const updatePreviousPrice = (productId: string, price: number): void => {
+  savePriceTracking(productId, { previousPrice: price });
+};
+
+export const updateNextPrice = (productId: string, price: number): void => {
+  savePriceTracking(productId, { nextPrice: price });
 };
