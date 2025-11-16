@@ -105,7 +105,7 @@ export default function App() {
       }
 
     })();
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiConfig.showProductImages, stockData]);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -1201,7 +1201,7 @@ Lutfen tekrar deneyin.`);
 
 
 
-  const totalStock = stockData.reduce((sum, item) => sum + item.count, 0);
+  const _totalStock = stockData.reduce((sum, item) => sum + item.count, 0);
 
 
 
@@ -1504,7 +1504,7 @@ Lutfen tekrar deneyin.`);
     document.addEventListener('keydown', handleKeyPress);
 
     return () => document.removeEventListener('keydown', handleKeyPress);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, selectedDate, currentDateIndex]);
 
 
@@ -1857,15 +1857,15 @@ Lutfen tekrar deneyin.`);
 
 
 
-    const testProductImages = async () => {
+    const _testProductImages = async () => {
 
       if (!testProductId) return;
 
-      setTestLoading(true);
+      _setTestLoading(true);
 
-      setTestResult(null);
+      _setTestResult(null);
 
-      setTestError(null);
+      _setTestError(null);
 
       const url = `${apiBase}/v2.0/products/${testProductId}/images`;
 
@@ -1895,7 +1895,7 @@ Lutfen tekrar deneyin.`);
 
         addLog('success', 'IMAGE_TEST', `Bulunan gÃƒ¶rsel say?s?: ${dataArray.length}`);
 
-        setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
+        _setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
 
       } catch (err) {
 
@@ -1903,11 +1903,11 @@ Lutfen tekrar deneyin.`);
 
         addLog('error', 'IMAGE_TEST', `GÃƒ¶rsel test hatas?: ${msg}`);
 
-        setTestError(msg);
+        _setTestError(msg);
 
       } finally {
 
-        setTestLoading(false);
+        _setTestLoading(false);
 
       }
 
@@ -2561,11 +2561,11 @@ Lutfen tekrar deneyin.`);
 
     const [testProductId, setTestProductId] = useState('');
 
-    const [testLoading, setTestLoading] = useState(false);
+    const [_testLoading, _setTestLoading] = useState(false);
 
-    const [testResult, setTestResult] = useState<any>(null);
+    const [_testResult, _setTestResult] = useState<unknown>(null);
 
-    const [testError, setTestError] = useState<string | null>(null);
+    const [_testError, _setTestError] = useState<string | null>(null);
 
     
 
@@ -3191,7 +3191,7 @@ Lutfen tekrar deneyin.`);
 
             <div className="flex items-center gap-2">
 
-              <Select value={logFilter} onValueChange={(value: any) => setLogFilter(value)}>
+              <Select value={logFilter} onValueChange={(value: 'all' | 'info' | 'success' | 'warning' | 'error') => setLogFilter(value)}>
 
                 <SelectTrigger className="w-32">
 
