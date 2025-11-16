@@ -35,7 +35,7 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
         return;
       }
       // numpad digits via code
-      const code: string = (e as any).code || '';
+      const code: string = (e as KeyboardEvent).code || '';
       if (/^Numpad[0-9]$/.test(code)) {
         e.preventDefault();
         handleNumberClick(code.replace('Numpad', ''));
@@ -74,6 +74,7 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, displayValue]);
 
   const handleNumberClick = (num: string) => {
