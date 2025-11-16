@@ -105,6 +105,29 @@ export const extractPrice = (record: unknown): number | undefined => {
   return undefined;
 };
 
+export const extractCost = (record: unknown): number | undefined => {
+  if (!record || typeof record !== 'object') return undefined;
+
+  const source = record as Record<string, unknown>;
+  const costCandidates = [
+    source.cost,
+    source.costPrice,
+    source.purchasePrice,
+    source.buyPrice,
+    source.unitCost,
+    source.baseCost,
+  ];
+
+  for (const candidate of costCandidates) {
+    const parsed = parsePriceValue(candidate);
+    if (parsed !== undefined) {
+      return parsed;
+    }
+  }
+
+  return undefined;
+};
+
 export const formatPrice = (value?: number | null): string => {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '-';

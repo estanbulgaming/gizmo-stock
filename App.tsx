@@ -29,7 +29,7 @@ import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
 
 import { formatPrice } from './utils/product';
 import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice } from './services/api';
 
 
 
@@ -42,6 +42,10 @@ export default function App() {
   const [addedValues, setAddedValues] = useState<{ [key: string]: number | '' }>({});
 
   const [priceValues, setPriceValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [previousPriceValues, setPreviousPriceValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [nextPriceValues, setNextPriceValues] = useState<{ [key: string]: number | '' }>({});
 
   const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
 
@@ -312,6 +316,90 @@ export default function App() {
 
 
     setPriceValues(prev => ({
+
+      ...prev,
+
+      [id]: parsed
+
+    }));
+
+  };
+
+
+
+  const handlePreviousPriceChange = (id: string, inputValue: string) => {
+
+    const normalized = inputValue.replace(',', '.').trim();
+
+    if (normalized === '') {
+
+      setPreviousPriceValues(prev => ({
+
+        ...prev,
+
+        [id]: ''
+
+      }));
+
+      return;
+
+    }
+
+
+
+    const parsed = Number(normalized);
+
+    if (!Number.isFinite(parsed)) {
+
+      return;
+
+    }
+
+
+
+    setPreviousPriceValues(prev => ({
+
+      ...prev,
+
+      [id]: parsed
+
+    }));
+
+  };
+
+
+
+  const handleNextPriceChange = (id: string, inputValue: string) => {
+
+    const normalized = inputValue.replace(',', '.').trim();
+
+    if (normalized === '') {
+
+      setNextPriceValues(prev => ({
+
+        ...prev,
+
+        [id]: ''
+
+      }));
+
+      return;
+
+    }
+
+
+
+    const parsed = Number(normalized);
+
+    if (!Number.isFinite(parsed)) {
+
+      return;
+
+    }
+
+
+
+    setNextPriceValues(prev => ({
 
       ...prev,
 
@@ -978,6 +1066,30 @@ export default function App() {
         priceResults = await updatePriceBatch(priceUpdates);
 
       }
+
+
+
+      // Save previous/next price values to localStorage
+
+      Object.entries(previousPriceValues).forEach(([productId, price]) => {
+
+        if (typeof price === 'number') {
+
+          updatePreviousPrice(productId, price);
+
+        }
+
+      });
+
+      Object.entries(nextPriceValues).forEach(([productId, price]) => {
+
+        if (typeof price === 'number') {
+
+          updateNextPrice(productId, price);
+
+        }
+
+      });
 
 
 
@@ -3847,6 +3959,16 @@ Lutfen tekrar deneyin.`);
 
               const currentPrice = typeof item.price === 'number' ? item.price : null;
 
+              const cost = typeof item.cost === 'number' ? item.cost : null;
+
+              const enteredPreviousPrice = typeof previousPriceValues[item.id] === 'number' ? previousPriceValues[item.id] : null;
+
+              const previousPrice = enteredPreviousPrice ?? (typeof item.previousPrice === 'number' ? item.previousPrice : null);
+
+              const enteredNextPrice = typeof nextPriceValues[item.id] === 'number' ? nextPriceValues[item.id] : null;
+
+              const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
+
               const priceDiff = enteredPrice !== null && currentPrice !== null
 
                 ? enteredPrice - currentPrice
@@ -3856,6 +3978,12 @@ Lutfen tekrar deneyin.`);
                   ? enteredPrice
 
                   : null;
+
+              const priceChangeDiff = previousPrice !== null && nextPrice !== null
+
+                ? nextPrice - previousPrice
+
+                : null;
 
               return (
 
@@ -4037,65 +4165,171 @@ Lutfen tekrar deneyin.`);
 
 
 
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Fiyat Bilgileri - Stok Sistemi Görünümü */}
 
-                    <div className="text-center">
+                  <div className="space-y-2 border-t pt-3">
 
-                      <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
+                    <p className="text-xs font-semibold text-muted-foreground">FİYAT BİLGİLERİ</p>
 
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
 
-                    </div>
 
-                    <div>
+                    <div className="grid grid-cols-2 gap-2">
 
-                      <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat</p>
+                      <div className="text-center">
 
-                      <Input
+                        <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
 
-                        value={enteredPrice ?? ''}
+                        <p className="bg-blue-50 text-blue-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(currentPrice)}</p>
 
-                        onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+                      </div>
 
-                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+                      <div className="text-center">
 
-                        inputMode="decimal"
+                        <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
 
-                        type="number"
+                        <p className="bg-orange-50 text-orange-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(cost)}</p>
 
-                        step="0.01"
-
-                        className="text-xs"
-
-                      />
+                      </div>
 
                     </div>
 
-                    <div className="text-center">
 
-                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
 
-                      <p className={`px-1 py-1 rounded text-xs ${
+                    <div className="grid grid-cols-3 gap-2">
 
-                        priceDiff !== null
+                      <div>
 
-                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+                        <p className="text-xs text-muted-foreground mb-1">Önceki Fiyat</p>
 
-                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+                        <Input
 
-                          : 'bg-muted'
+                          value={enteredPreviousPrice ?? ''}
 
-                      }`}>
+                          onChange={(event) => handlePreviousPriceChange(item.id, event.target.value)}
 
-                        {priceDiff !== null
+                          placeholder={previousPrice !== null ? formatPrice(previousPrice) : '0.00'}
 
-                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
+                          inputMode="decimal"
 
-                          : '-'
+                          type="number"
 
-                        }
+                          step="0.01"
 
-                      </p>
+                          className="text-xs h-8"
+
+                        />
+
+                      </div>
+
+                      <div>
+
+                        <p className="text-xs text-muted-foreground mb-1">Sonraki Fiyat</p>
+
+                        <Input
+
+                          value={enteredNextPrice ?? ''}
+
+                          onChange={(event) => handleNextPriceChange(item.id, event.target.value)}
+
+                          placeholder={nextPrice !== null ? formatPrice(nextPrice) : '0.00'}
+
+                          inputMode="decimal"
+
+                          type="number"
+
+                          step="0.01"
+
+                          className="text-xs h-8"
+
+                        />
+
+                      </div>
+
+                      <div className="text-center">
+
+                        <p className="text-xs text-muted-foreground mb-1">Fiyat Farkı</p>
+
+                        <p className={`px-1 py-1 rounded text-xs font-semibold ${
+
+                          priceChangeDiff !== null
+
+                            ? priceChangeDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                              priceChangeDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+
+                            : 'bg-muted'
+
+                        }`}>
+
+                          {priceChangeDiff !== null
+
+                            ? `${priceChangeDiff > 0 ? '+' : ''}${priceChangeDiff.toFixed(2)}`
+
+                            : '-'
+
+                          }
+
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+
+                    <div className="grid grid-cols-3 gap-2">
+
+                      <div className="text-center col-span-2">
+
+                        <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
+
+                        <Input
+
+                          value={enteredPrice ?? ''}
+
+                          onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+
+                          placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+
+                          inputMode="decimal"
+
+                          type="number"
+
+                          step="0.01"
+
+                          className="text-xs h-8"
+
+                        />
+
+                      </div>
+
+                      <div className="text-center">
+
+                        <p className="text-xs text-muted-foreground mb-1">Fark</p>
+
+                        <p className={`px-1 py-1 rounded text-xs font-semibold ${
+
+                          priceDiff !== null
+
+                            ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                              priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+
+                            : 'bg-muted'
+
+                        }`}>
+
+                          {priceDiff !== null
+
+                            ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
+
+                            : '-'
+
+                          }
+
+                        </p>
+
+                      </div>
 
                     </div>
 
@@ -4269,17 +4503,109 @@ Lutfen tekrar deneyin.`);
 
                     </div>
 
+                  </div>
+
+
+
+                  {/* Desktop Price Section */}
+
+                  <div className="flex items-center gap-2 text-sm border-t pt-2 mt-2">
+
                     <div className="text-center min-w-[90px]">
 
                       <p className="text-muted-foreground">Mevcut Fiyat</p>
 
-                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
+                      <p className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-medium">{formatPrice(currentPrice)}</p>
+
+                    </div>
+
+                    <div className="text-center min-w-[90px]">
+
+                      <p className="text-muted-foreground">Maliyet</p>
+
+                      <p className="bg-orange-50 text-orange-800 px-2 py-1 rounded font-medium">{formatPrice(cost)}</p>
+
+                    </div>
+
+                    <div className="w-24">
+
+                      <p className="text-muted-foreground">Önceki Fiyat</p>
+
+                      <Input
+
+                        value={enteredPreviousPrice ?? ''}
+
+                        onChange={(event) => handlePreviousPriceChange(item.id, event.target.value)}
+
+                        placeholder={previousPrice !== null ? formatPrice(previousPrice) : '0.00'}
+
+                        inputMode="decimal"
+
+                        type="number"
+
+                        step="0.01"
+
+                        className="h-8"
+
+                      />
+
+                    </div>
+
+                    <div className="w-24">
+
+                      <p className="text-muted-foreground">Sonraki Fiyat</p>
+
+                      <Input
+
+                        value={enteredNextPrice ?? ''}
+
+                        onChange={(event) => handleNextPriceChange(item.id, event.target.value)}
+
+                        placeholder={nextPrice !== null ? formatPrice(nextPrice) : '0.00'}
+
+                        inputMode="decimal"
+
+                        type="number"
+
+                        step="0.01"
+
+                        className="h-8"
+
+                      />
+
+                    </div>
+
+                    <div className="text-center min-w-[70px]">
+
+                      <p className="text-muted-foreground">Fiyat Farkı</p>
+
+                      <p className={`px-2 py-1 rounded font-semibold ${
+
+                        priceChangeDiff !== null
+
+                          ? priceChangeDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            priceChangeDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {priceChangeDiff !== null
+
+                          ? `${priceChangeDiff > 0 ? '+' : ''}${priceChangeDiff.toFixed(2)}`
+
+                          : '-'
+
+                        }
+
+                      </p>
 
                     </div>
 
                     <div className="w-28">
 
-                      <p className="text-muted-foreground">Yeni Fiyat</p>
+                      <p className="text-muted-foreground">Yeni Fiyat (Güncelle)</p>
 
                       <Input
 
@@ -4295,21 +4621,23 @@ Lutfen tekrar deneyin.`);
 
                         step="0.01"
 
+                        className="h-8"
+
                       />
 
                     </div>
 
-                    <div className="text-center min-w-[90px]">
+                    <div className="text-center min-w-[70px]">
 
-                      <p className="text-muted-foreground">Fiyat Farki</p>
+                      <p className="text-muted-foreground">Fark</p>
 
-                      <p className={`px-2 py-1 rounded ${
+                      <p className={`px-2 py-1 rounded font-semibold ${
 
                         priceDiff !== null
 
                           ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
 
-                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
 
                           : 'bg-muted'
 
