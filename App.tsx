@@ -211,7 +211,7 @@ export default function App() {
 
     setStockFetchProgress({ current: 0, total: ids.length });
 
-    addLog('info', 'STOCK_GET_BATCH', `${ids.length} Ãƒ¼rÃƒ¼nÃƒ¼n stoklar? Ãƒ§ekiliyor...`);
+    addLog('info', 'STOCK_GET_BATCH', `${ids.length} ürünün stokları çekiliyor...`);
 
     const concurrency = 5;
 
@@ -259,7 +259,7 @@ export default function App() {
 
     } finally {
 
-      addLog('info', 'STOCK_GET_BATCH', `Stok Ãƒ§ekimi tamamland?. Ba?ar?l?: ${success}, Ba?ar?s?z: ${failed}`);
+      addLog('info', 'STOCK_GET_BATCH', `Stok çekimi tamamlandı. Başarılı: ${success}, Başarısız: ${failed}`);
 
       setIsFetchingStocks(false);
 
@@ -487,7 +487,7 @@ export default function App() {
 
       const url = `${apiBase}/stock/${productId}/${newStockCount}`;
 
-      addLog('info', 'STOCK_API', `Stok gÃƒ¼ncelleniyor: ID ${productId} > ${newStockCount}`, { url });
+      addLog('info', 'STOCK_API', `Stok güncelleniyor: ID ${productId} → ${newStockCount}`, { url });
 
       const response = await fetch(url, {
 
@@ -509,7 +509,7 @@ export default function App() {
 
       }
 
-      addLog('success', 'STOCK_API', `Stok gÃƒ¼ncellendi: ID ${productId} > ${newStockCount}`);
+      addLog('success', 'STOCK_API', `Stok güncellendi: ID ${productId} → ${newStockCount}`);
 
       const result = await response.json().catch(() => ({ success: true }));
 
@@ -519,7 +519,7 @@ export default function App() {
 
     } catch (error) {
 
-      addLog('error', 'STOCK_API', `Stok gÃƒ¼ncellenemedi: ID ${productId}`, error);
+      addLog('error', 'STOCK_API', `Stok güncellenemedi: ID ${productId}`, error);
 
       throw error;
 
@@ -1261,7 +1261,7 @@ Lutfen tekrar deneyin.`);
 
     if (filtered.length === 0) {
 
-      alert('Filtreye uyan Ãƒ¼rÃƒ¼n bulunamad?.');
+      alert('Filtreye uyan ürün bulunamadı.');
 
       return;
 
@@ -1301,13 +1301,13 @@ Lutfen tekrar deneyin.`);
 
 
 
-    addLog('info', 'RESET', `Filtreye uyan ${filtered.length} Ãƒ¼rÃƒ¼n iÃƒ§in say?lan=0 atand?.`, {
+    addLog('info', 'RESET', `Filtreye uyan ${filtered.length} ürün için sayılan=0 atandı.`, {
 
       affected: filtered.map(f => f.id)
 
     });
 
-    alert(`Filtreye uyan ${filtered.length} Ãƒ¼rÃƒ¼n 0 olarak say?ld?.\n\n"De?i?iklikleri Uygula" ile stoklar? 0'a gÃƒ¼ncelleyebilirsiniz.`);
+    alert(`Filtreye uyan ${filtered.length} ürün 0 olarak sayıldı.\n\n"Değişiklikleri Uygula" ile stokları 0'a güncelleyebilirsiniz.`);
 
   };
 
@@ -1625,7 +1625,7 @@ Lutfen tekrar deneyin.`);
 
   React.useEffect(() => {
 
-    addLog('success', 'SYSTEM', 'Stok YÃƒ¶netim Sistemi ba?lat?ld?', {
+    addLog('success', 'SYSTEM', 'Stok Yönetim Sistemi başlatıldı', {
 
       version: '1.0.0',
 
@@ -1711,7 +1711,7 @@ Lutfen tekrar deneyin.`);
 
         setTimeout(() => {
 
-          const searchInput = document.querySelector('input[placeholder*="ÃƒÅ“rÃƒ¼n ad? veya barkod"]') as HTMLInputElement;
+          const searchInput = document.querySelector('input[placeholder*="Ürün adı veya barkod"]') as HTMLInputElement;
 
           if (searchInput) {
 
@@ -2033,9 +2033,9 @@ Lutfen tekrar deneyin.`);
 
         <div>
 
-          <h2>Stok Say?m GeÃƒ§mi?i</h2>
+          <h2>Stok Sayım Geçmişi</h2>
 
-          <p className="text-muted-foreground">G?nl?k stok de?i?ikliklerini g?r?nt?leyin (&lt; &gt; tu?lar? ile navigasyon)</p>
+          <p className="text-muted-foreground">Günlük stok değişikliklerini görüntüleyin (← → tuşları ile navigasyon)</p>
 
         </div>
 
@@ -2055,7 +2055,7 @@ Lutfen tekrar deneyin.`);
 
                   {showDateList ? <List className="h-5 w-5" /> : <CalendarIcon className="h-5 w-5" />}
 
-                  <h3>{showDateList ? 'Say?m GÃƒ¼nleri' : 'Say?m Takvimi'}</h3>
+                  <h3>{showDateList ? 'Sayım Günleri' : 'Sayım Takvimi'}</h3>
 
                 </div>
 
@@ -2087,7 +2087,7 @@ Lutfen tekrar deneyin.`);
 
                   {uniqueDatesSorted.length === 0 ? (
 
-                    <p className="text-muted-foreground text-center py-8">HenÃƒ¼z say?m yap?lmam??</p>
+                    <p className="text-muted-foreground text-center py-8">Henüz sayım yapılmamış</p>
 
                   ) : (
 
@@ -2137,7 +2137,7 @@ Lutfen tekrar deneyin.`);
 
                               <p className="text-sm opacity-80">
 
-                                {report.totalProducts} Ãƒ¼rÃƒ¼n, {report.totalChanged} de?i?iklik
+                                {report.totalProducts} ürün, {report.totalChanged} değişiklik
 
                               </p>
 
@@ -2145,7 +2145,7 @@ Lutfen tekrar deneyin.`);
 
                             <div className="text-right">
 
-                              <p className="text-sm">Say?lan: {report.totalCounted}</p>
+                              <p className="text-sm">Sayılan: {report.totalCounted}</p>
 
                               <p className="text-sm">Eklenen: {report.totalAdded}</p>
 
@@ -2225,7 +2225,7 @@ Lutfen tekrar deneyin.`);
 
                       <div className="w-3 h-3 bg-primary rounded"></div>
 
-                      <span>Say?m yap?lan gÃƒ¼nler</span>
+                      <span>Sayım yapılan günler</span>
 
                     </div>
 
@@ -2269,7 +2269,7 @@ Lutfen tekrar deneyin.`);
 
                     </Button>
 
-                    <h3>GÃƒ¼nlÃƒ¼k Rapor - {selectedReport.date}</h3>
+                    <h3>Günlük Rapor - {selectedReport.date}</h3>
 
                     <Button
 
@@ -2561,11 +2561,11 @@ Lutfen tekrar deneyin.`);
 
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 
-                <p className="text-muted-foreground">GÃƒ¼nlÃƒ¼k rapor gÃƒ¶rmek iÃƒ§in {showDateList ? 'listeden' : 'takvimden'} bir tarih seÃƒ§in</p>
+                <p className="text-muted-foreground">Günlük rapor görmek için {showDateList ? 'listeden' : 'takvimden'} bir tarih seçin</p>
 
                 {uniqueDatesSorted.length === 0 && (
 
-                  <p className="text-sm text-muted-foreground mt-2">HenÃƒ¼z hiÃƒ§ say?m yap?lmam??</p>
+                  <p className="text-sm text-muted-foreground mt-2">Henüz hiç sayım yapılmamış</p>
 
                 )}
 
@@ -2583,11 +2583,11 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-4">
 
-          <h3 className="mb-4">TÃƒ¼m De?i?iklikler</h3>
+          <h3 className="mb-4">Tüm Değişiklikler</h3>
 
           {stockChanges.length === 0 ? (
 
-            <p className="text-muted-foreground text-center py-8">HenÃƒ¼z stok de?i?ikli?i yok</p>
+            <p className="text-muted-foreground text-center py-8">Henüz stok değişikliği yok</p>
 
           ) : (
 
@@ -2669,7 +2669,7 @@ Lutfen tekrar deneyin.`);
 
     const [logFilter, setLogFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
 
-    // GÃƒ¶rsel test durumlar?
+    // Görsel test durumları
 
     const [testProductId, setTestProductId] = useState('');
 
@@ -2691,7 +2691,7 @@ Lutfen tekrar deneyin.`);
 
     const clearLogs = () => {
 
-      if (confirm('TÃƒ¼m loglar? temizlemek istedi?inizden emin misiniz?')) {
+      if (confirm('Tüm logları temizlemek istediğinizden emin misiniz?')) {
 
         setSystemLogs([]);
 
@@ -2733,9 +2733,9 @@ Lutfen tekrar deneyin.`);
 
         <div>
 
-          <h2>Sistem Ayarlar?</h2>
+          <h2>Sistem Ayarları</h2>
 
-          <p className="text-muted-foreground">API ba?lant? ayarlar?n? ve sistem parametrelerini yap?land?r?n</p>
+          <p className="text-muted-foreground">API bağlantı ayarlarını ve sistem parametrelerini yapılandırın</p>
 
         </div>
 
@@ -2745,7 +2745,7 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-6">
 
-          <h3 className="mb-4">API Ba?lant? Ayarlar?</h3>
+          <h3 className="mb-4">API Bağlantı Ayarları</h3>
 
           <div className="space-y-4">
 
@@ -2881,7 +2881,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <Label htmlFor="paginationLimit">Sayfa Ba?? ÃƒÅ“rÃƒ¼n Say?s?</Label>
+              <Label htmlFor="paginationLimit">Sayfa Başı Ürün Sayısı</Label>
 
               <Select
 
@@ -2935,7 +2935,7 @@ Lutfen tekrar deneyin.`);
 
                 <Label htmlFor="includeDeleted">
 
-                  Silinmi? ÃƒÅ“rÃƒ¼nler
+                  Silinmiş Ürünler
 
                 </Label>
 
@@ -2961,7 +2961,7 @@ Lutfen tekrar deneyin.`);
 
                 <Label htmlFor="showProductImages">
 
-                  ÃƒÅ“rÃƒ¼n Foto?raflar?n? GÃƒ¶ster
+                  Ürün Fotoğraflarını Göster
 
                 </Label>
 
@@ -3001,7 +3001,7 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-6">
 
-          <h3 className="mb-4">GÃƒ¶rsel Test</h3>
+          <h3 className="mb-4">Görsel Test</h3>
 
           <div className="space-y-3">
 
@@ -3009,13 +3009,13 @@ Lutfen tekrar deneyin.`);
 
               <div className="md:col-span-2">
 
-                <Label htmlFor="testProductId">ÃƒÅ“rÃƒ¼n ID</Label>
+                <Label htmlFor="testProductId">Ürün ID</Label>
 
                 <Input
 
                   id="testProductId"
 
-                  placeholder="Ãƒ¶r. 48"
+                  placeholder="ör. 48"
 
                   value={testProductId}
 
@@ -3051,9 +3051,9 @@ Lutfen tekrar deneyin.`);
 
                 <div className="text-sm">
 
-                  <div>?stek URL: <span className="font-mono break-all">{testResult.requestUrl}</span></div>
+                  <div>İstek URL: <span className="font-mono break-all">{testResult.requestUrl}</span></div>
 
-                  <div>Bulunan gÃƒ¶rsel say?s?: <b>{testResult.count}</b></div>
+                  <div>Bulunan görsel sayısı: <b>{testResult.count}</b></div>
 
                 </div>
 
@@ -3081,7 +3081,7 @@ Lutfen tekrar deneyin.`);
 
           <div className="flex items-center justify-between mb-4">
 
-            <h3>ÃƒÅ“rÃƒ¼n Kategorileri</h3>
+            <h3>Ürün Kategorileri</h3>
 
             <Button
 
@@ -3097,7 +3097,7 @@ Lutfen tekrar deneyin.`);
 
               <RefreshCw className="h-4 w-4" />
 
-              Kategorileri YÃƒ¼kle
+              Kategorileri Yükle
 
             </Button>
 
@@ -3111,11 +3111,11 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label>Stok Sayfas?nda GÃƒ¶sterilecek Kategoriler</Label>
+                <Label>Stok Sayfasında Gösterilecek Kategoriler</Label>
 
                 <p className="text-sm text-muted-foreground mb-3">
 
-                  SeÃƒ§ilen kategoriler stok sayfas?nda filtre butonlar? olarak gÃƒ¶rÃƒ¼necek
+                  Seçilen kategoriler stok sayfasında filtre butonları olarak görünecek
 
                 </p>
 
@@ -3167,7 +3167,7 @@ Lutfen tekrar deneyin.`);
 
                 <div className="p-3 bg-muted rounded">
 
-                  <p className="text-sm font-medium mb-2">SeÃƒ§ilen Kategoriler:</p>
+                  <p className="text-sm font-medium mb-2">Seçilen Kategoriler:</p>
 
                   <div className="flex flex-wrap gap-2">
 
@@ -3201,9 +3201,9 @@ Lutfen tekrar deneyin.`);
 
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
 
-              <p>Kategori bulunamad?</p>
+              <p>Kategori bulunamadı</p>
 
-              <p className="text-sm mt-2">Kategorileri yÃƒ¼klemek iÃƒ§in yukar?daki butona t?klay?n</p>
+              <p className="text-sm mt-2">Kategorileri yüklemek için yukarıdaki butona tıklayın</p>
 
             </div>
 
@@ -3223,7 +3223,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">ÃƒÅ“rÃƒ¼nler Listesi (GET):</p>
+              <p className="text-sm font-medium mb-1">Ürünler Listesi (GET):</p>
 
               <div className="bg-muted p-3 rounded font-mono text-sm break-all">
 
@@ -3247,7 +3247,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Stok GÃƒ¼ncelleme (POST):</p>
+              <p className="text-sm font-medium mb-1">Stok Güncelleme (POST):</p>
 
               <div className="bg-muted p-3 rounded font-mono text-sm break-all">
 
@@ -3257,7 +3257,7 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-xs text-muted-foreground mt-2">
 
-                Ãƒ–rnek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/48/25"
+                Örnek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/48/25"
 
               </p>
 
@@ -3297,7 +3297,7 @@ Lutfen tekrar deneyin.`);
 
               <Terminal className="h-5 w-5" />
 
-              <h3>Sistem Loglar?</h3>
+              <h3>Sistem Logları</h3>
 
             </div>
 
@@ -3379,7 +3379,7 @@ Lutfen tekrar deneyin.`);
 
               <div className="text-gray-500 text-center py-4">
 
-                {logFilter === 'all' ? 'HenÃƒ¼z log kayd? yok' : `${logFilter} seviyesinde log kayd? yok`}
+                {logFilter === 'all' ? 'Henüz log kaydı yok' : `${logFilter} seviyesinde log kaydı yok`}
 
               </div>
 
@@ -3457,7 +3457,7 @@ Lutfen tekrar deneyin.`);
 
             <span>
 
-              {filteredLogs.length} log gÃƒ¶rÃƒ¼ntÃƒ¼leniyor
+              {filteredLogs.length} log görüntüleniyor
 
               {logFilter !== 'all' && ` (${logFilter} filtreli)`}
 
@@ -3483,7 +3483,7 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-sm text-muted-foreground mb-3">
 
-                Bu i?lem geri al?namaz ve tÃƒ¼m Ãƒ¼rÃƒ¼nlerin stok miktarlar?n? s?f?rlar.
+                Bu işlem geri alınamaz ve tüm ürünlerin stok miktarlarını sıfırlar.
 
               </p>
 
@@ -3493,9 +3493,9 @@ Lutfen tekrar deneyin.`);
 
                 onClick={() => {
 
-                  if (confirm("?? UYARI: Bu i?lem geri al?namaz ve bÃƒ¼tÃƒ¼n stok seviyeleri tamamen 0 olacakt?r!\n\nDevam etmek istedi?inizden emin misiniz?")) {
+                  if (confirm("⚠️ UYARI: Bu işlem geri alınamaz ve bütün stok seviyeleri tamamen 0 olacaktır!\n\nDevam etmek istediğinizden emin misiniz?")) {
 
-                    if (confirm("?? SON UYARI: Bu i?lem GER? ALINAMAZ!\n\nTÃƒ¼m Ãƒ¼rÃƒ¼nlerin stok miktarlar? 0 olacak. GerÃƒ§ekten devam etmek istiyor musunuz?")) {
+                    if (confirm("🛑 SON UYARI: Bu işlem GERİ ALINAMAZ!\n\nTüm ürünlerin stok miktarları 0 olacak. Gerçekten devam etmek istiyor musunuz?")) {
 
                       resetAllToZero();
 
@@ -3507,7 +3507,7 @@ Lutfen tekrar deneyin.`);
 
               >
 
-                TÃƒ¼m Sto?u S?f?rla
+                Tüm Stoğu Sıfırla
 
               </Button>
 
@@ -3667,9 +3667,9 @@ Lutfen tekrar deneyin.`);
 
               <RefreshCw className={`h-4 w-4 ${isLoadingProducts ? 'animate-spin' : ''}`} />
 
-              <span className="sm:hidden">{isLoadingProducts ? 'YÃƒ¼kleniyor...' : 'Getir'}</span>
+              <span className="sm:hidden">{isLoadingProducts ? 'Yükleniyor...' : 'Getir'}</span>
 
-              <span className="hidden sm:inline">{isLoadingProducts ? 'YÃƒ¼kleniyor...' : 'ÃƒÅ“rÃƒ¼nleri Getir'}</span>
+              <span className="hidden sm:inline">{isLoadingProducts ? 'Yükleniyor...' : 'Ürünleri Getir'}</span>
 
             </Button>
 
@@ -3695,7 +3695,7 @@ Lutfen tekrar deneyin.`);
 
                   <span className="sm:hidden">{updateProgress.current}/{updateProgress.total}</span>
 
-                  <span className="hidden sm:inline">GÃƒ¼ncelleniyor... ({updateProgress.current}/{updateProgress.total})</span>
+                  <span className="hidden sm:inline">Güncelleniyor... ({updateProgress.current}/{updateProgress.total})</span>
 
                 </>
 
@@ -3745,7 +3745,7 @@ Lutfen tekrar deneyin.`);
 
               <div className="flex justify-between text-sm">
 
-                <span>Stok gÃƒ¼ncelleniyor...</span>
+                <span>Stok güncelleniyor...</span>
 
                 <span>{updateProgress.current} / {updateProgress.total}</span>
 
@@ -3775,7 +3775,7 @@ Lutfen tekrar deneyin.`);
 
             <div className="flex justify-between text-sm">
 
-              <span>Stoklar yÃƒ¼kleniyor...</span>
+              <span>Stoklar yükleniyor...</span>
 
               <span>{stockFetchProgress.current} / {stockFetchProgress.total}</span>
 
@@ -3801,7 +3801,7 @@ Lutfen tekrar deneyin.`);
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
 
-            <h2 className="text-lg sm:text-xl">Stok ÃƒÅ“rÃƒ¼nleri</h2>
+            <h2 className="text-lg sm:text-xl">Stok Ürünleri</h2>
 
             <div className="flex items-center gap-2 flex-1 max-w-full sm:max-w-md">
 
@@ -3813,7 +3813,7 @@ Lutfen tekrar deneyin.`);
 
                   type="text"
 
-                  placeholder="ÃƒÅ“rÃƒ¼n ad? veya barkod ile ara..."
+                  placeholder="Ürün adı veya barkod ile ara..."
 
                   value={searchQuery}
 
@@ -3873,7 +3873,7 @@ Lutfen tekrar deneyin.`);
 
                 <Filter className="h-4 w-4" />
 
-                Hepsini GÃƒ¶ster
+                Hepsini Göster
 
               </Button>
 
@@ -3915,7 +3915,7 @@ Lutfen tekrar deneyin.`);
 
             <div className="text-sm text-muted-foreground">
 
-              {filteredStockData.length} Ãƒ¼rÃƒ¼n bulundu
+              {filteredStockData.length} ürün bulundu
 
               {searchQuery && `: "${searchQuery}"`}
 
@@ -4039,7 +4039,7 @@ Lutfen tekrar deneyin.`);
 
                               <ImageIcon className="h-4 w-4 mx-auto mb-1" />
 
-                              <span className="text-xs">GÃƒ¶ster</span>
+                              <span className="text-xs">Göster</span>
 
                             </div>
 
@@ -4053,13 +4053,13 @@ Lutfen tekrar deneyin.`);
 
                     
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
 
-                      <p className="text-xs text-muted-foreground">ÃƒÅ“rÃƒ¼n</p>
+                      <p className="text-xs text-muted-foreground">Ürün</p>
 
-                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="font-medium text-sm break-words">{item.name}</p>
 
-                      <p className="text-xs text-muted-foreground">Barkod: {item.barcode}</p>
+                      <p className="text-xs text-muted-foreground break-all">Barkod: {item.barcode}</p>
 
                     </div>
 
@@ -4097,7 +4097,7 @@ Lutfen tekrar deneyin.`);
 
                     <div>
 
-                      <p className="text-xs text-muted-foreground mb-1">Say?lan</p>
+                      <p className="text-xs text-muted-foreground mb-1">Sayılan</p>
 
                       <NumpadInput
 
@@ -4389,7 +4389,7 @@ Lutfen tekrar deneyin.`);
 
                               <ImageIcon className="h-3 w-3 mx-auto mb-1" />
 
-                              <span className="text-xs">GÃƒ¶ster</span>
+                              <span className="text-xs">Göster</span>
 
                             </div>
 
@@ -4403,13 +4403,13 @@ Lutfen tekrar deneyin.`);
 
                     
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
 
-                      <p className="text-sm text-muted-foreground">ÃƒÅ“rÃƒ¼n</p>
+                      <p className="text-sm text-muted-foreground">Ürün</p>
 
-                      <p>{item.name}</p>
+                      <p className="break-words">{item.name}</p>
 
-                      <p className="text-sm text-muted-foreground mt-1">Barkod: {item.barcode}</p>
+                      <p className="text-sm text-muted-foreground mt-1 break-all">Barkod: {item.barcode}</p>
 
                     </div>
 
@@ -4429,7 +4429,7 @@ Lutfen tekrar deneyin.`);
 
                     <div className="w-20">
 
-                      <p className="text-muted-foreground">Say?lan</p>
+                      <p className="text-muted-foreground">Sayılan</p>
 
                       <NumpadInput
 
@@ -4677,9 +4677,9 @@ Lutfen tekrar deneyin.`);
 
                 <>
 
-                  <p>"{searchQuery}" aramas? iÃƒ§in sonuÃƒ§ bulunamad?</p>
+                  <p>"{searchQuery}" araması için sonuç bulunamadı</p>
 
-                  <p className="text-sm mt-2">ÃƒÅ“rÃƒ¼n ad? veya barkod numaras?n? kontrol edin</p>
+                  <p className="text-sm mt-2">Ürün adı veya barkod numarasını kontrol edin</p>
 
                 </>
 
@@ -4687,9 +4687,9 @@ Lutfen tekrar deneyin.`);
 
                 <>
 
-                  <p>Bu kategoride Ãƒ¼rÃƒ¼n bulunamad?</p>
+                  <p>Bu kategoride ürün bulunamadı</p>
 
-                  <p className="text-sm mt-2">Farkl? bir kategori seÃƒ§in veya "Hepsini GÃƒ¶ster" butonuna t?klay?n</p>
+                  <p className="text-sm mt-2">Farklı bir kategori seçin veya "Hepsini Göster" butonuna tıklayın</p>
 
                 </>
 
