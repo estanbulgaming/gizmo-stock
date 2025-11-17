@@ -235,13 +235,13 @@ export default function App() {
 
               setStockData((prev) => prev.map((p) => (p.id === id ? { ...p, count: stock } : p)));
 
-              addLog('success', 'STOCK_GET', `Stok al?nd?: ${id} -> ${stock}`);
+              addLog('success', 'STOCK_GET', `Stok alındı: ${id} -> ${stock}`);
 
               success += 1;
 
             } catch (error) {
 
-              addLog('warning', 'STOCK_GET', `Stok al?namad?: ${id}`, error);
+              addLog('warning', 'STOCK_GET', `Stok alınamadı: ${id}`, error);
 
               failed += 1;
 
@@ -778,13 +778,13 @@ export default function App() {
   const fetchProductGroups = async () => {
     try {
       const url = joinApi(apiConfig.groupsEndpoint);
-      addLog('info', 'GROUPS_API', 'Kategoriler y?kleniyor...', { url, auth: `${apiConfig.username}:***` });
+      addLog('info', 'GROUPS_API', 'Kategoriler yükleniyor...', { url, auth: `${apiConfig.username}:***` });
       const groups = await fetchProductGroupsService({ apiConfig, joinApi });
       setProductGroups(groups);
-      addLog('success', 'GROUPS_API', `${groups.length} kategori y?klendi`, { groups: groups.map(g => g.name) });
+      addLog('success', 'GROUPS_API', `${groups.length} kategori yüklendi`, { groups: groups.map(g => g.name) });
     } catch (error) {
-      addLog('error', 'GROUPS_API', 'Kategoriler y?klenirken hata', error);
-      let errorMessage = '?r?n kategorileri y?klenirken hata olu?tu!';
+      addLog('error', 'GROUPS_API', 'Kategoriler yüklenirken hata', error);
+      let errorMessage = 'Ürün kategorileri yüklenirken hata oluştu!';
       if (error instanceof Error) {
         errorMessage += `\n\nDetay: ${error.message}`;
       }
@@ -2655,7 +2655,7 @@ Lutfen tekrar deneyin.`);
 
       const url = `${apiBase}/v2.0/products/${testProductId}/images`;
 
-      addLog('info', 'IMAGE_TEST', `GÃƒ¶rsel test ba?lat?ld?: ${testProductId}`, { url });
+      addLog('info', 'IMAGE_TEST', `Görsel test başlatıldı: ${testProductId}`, { url });
 
       try {
 
@@ -2679,7 +2679,7 @@ Lutfen tekrar deneyin.`);
 
         const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? []);
 
-        addLog('success', 'IMAGE_TEST', `Bulunan gÃƒ¶rsel say?s?: ${dataArray.length}`);
+        addLog('success', 'IMAGE_TEST', `Bulunan görsel sayısı: ${dataArray.length}`);
 
         setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
 
@@ -2687,7 +2687,7 @@ Lutfen tekrar deneyin.`);
 
         const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
 
-        addLog('error', 'IMAGE_TEST', `GÃƒ¶rsel test hatas?: ${msg}`);
+        addLog('error', 'IMAGE_TEST', `Görsel test hatası: ${msg}`);
 
         setTestError(msg);
 
@@ -2837,7 +2837,7 @@ Lutfen tekrar deneyin.`);
 
                   onChange={(e) => setApiConfig(prev => ({ ...prev, username: e.target.value }))}
 
-                  placeholder="kullan?c? ad?"
+                  placeholder="kullanıcı adı"
 
                 />
 
@@ -2845,7 +2845,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="password">Ã…ifre</Label>
+                <Label htmlFor="password">Şifre</Label>
 
                 <div className="relative">
 
@@ -2859,7 +2859,7 @@ Lutfen tekrar deneyin.`);
 
                     onChange={(e) => setApiConfig(prev => ({ ...prev, password: e.target.value }))}
 
-                    placeholder="?ifre"
+                    placeholder="şifre"
 
                     className="pr-10"
 
@@ -3475,7 +3475,7 @@ Lutfen tekrar deneyin.`);
 
             </span>
 
-            <span>Son 100 log saklan?r</span>
+            <span>Son 100 log saklanır</span>
 
           </div>
 
@@ -3487,7 +3487,7 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-6 border-destructive/20">
 
-          <h3 className="mb-4 text-destructive">Tehlikeli ??lemler</h3>
+          <h3 className="mb-4 text-destructive">Tehlikeli İşlemler</h3>
 
           <div className="space-y-4">
 
@@ -3717,7 +3717,7 @@ Lutfen tekrar deneyin.`);
 
                   <span className="sm:hidden">Uygula</span>
 
-                  <span className="hidden sm:inline">De?i?iklikleri Uygula</span>
+                  <span className="hidden sm:inline">Değişiklikleri Uygula</span>
 
                 </>
 
@@ -4209,7 +4209,7 @@ Lutfen tekrar deneyin.`);
 
                     <div className="grid grid-cols-3 gap-2">
 
-                      <div className="col-span-2">
+                      <div>
 
                         <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
 
@@ -4465,7 +4465,7 @@ Lutfen tekrar deneyin.`);
 
                     </div>
 
-                    <div className="text-center">
+                    <div className="w-20">
 
                       <p className="text-sm text-muted-foreground mb-1">Yeni Fiyat</p>
 
