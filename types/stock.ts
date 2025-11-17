@@ -7,6 +7,8 @@
   cost?: number;
   previousPrice?: number;
   nextPrice?: number;
+  previousCost?: number;
+  nextCost?: number;
   imageUrl?: string;
   productGroupId?: number;
 }
@@ -24,6 +26,9 @@ export interface StockChange {
   previousPrice?: number;
   newPrice?: number;
   priceChange?: number;
+  previousCost?: number;
+  newCost?: number;
+  costChange?: number;
 }
 
 export interface DailyReport {

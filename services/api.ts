@@ -126,6 +126,8 @@ export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise
       cost: cost ?? undefined,
       previousPrice: priceTracking.previousPrice,
       nextPrice: priceTracking.nextPrice,
+      previousCost: priceTracking.previousCost,
+      nextCost: priceTracking.nextCost,
       productGroupId:
         productGroupIdValue == null ? undefined : parseNumber(productGroupIdValue, 0),
     });
@@ -177,6 +179,8 @@ const PRICE_TRACKING_KEY = 'gizmo_price_tracking';
 interface PriceTracking {
   previousPrice?: number;
   nextPrice?: number;
+  previousCost?: number;
+  nextCost?: number;
 }
 
 interface PriceTrackingStorage {
@@ -221,4 +225,12 @@ export const updatePreviousPrice = (productId: string, price: number): void => {
 
 export const updateNextPrice = (productId: string, price: number): void => {
   savePriceTracking(productId, { nextPrice: price });
+};
+
+export const updatePreviousCost = (productId: string, cost: number): void => {
+  savePriceTracking(productId, { previousCost: cost });
+};
+
+export const updateNextCost = (productId: string, cost: number): void => {
+  savePriceTracking(productId, { nextCost: cost });
 };
