@@ -325,6 +325,18 @@ export default function App() {
 
   };
 
+  const handlePriceChange = (id: string, value: number | '') => {
+
+    setPriceValues(prev => ({
+
+      ...prev,
+
+      [id]: value
+
+    }));
+
+  };
+
 
 
   const _handlePreviousPriceChange = (id: string, inputValue: string) => {
@@ -4195,49 +4207,25 @@ Lutfen tekrar deneyin.`);
 
 
 
-                    <div className="grid grid-cols-2 gap-2">
-
-                      <div className="text-center">
-
-                        <p className="text-xs text-muted-foreground mb-1">Önceki Fiyat</p>
-
-                        <p className="bg-purple-50 text-purple-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(previousPrice)}</p>
-
-                      </div>
-
-                      <div className="text-center">
-
-                        <p className="text-xs text-muted-foreground mb-1">Sonraki Fiyat</p>
-
-                        <p className="bg-green-50 text-green-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(nextPrice)}</p>
-
-                      </div>
-
-                    </div>
-
-
-
                     <div className="grid grid-cols-3 gap-2">
 
-                      <div className="text-center col-span-2">
+                      <div className="col-span-2">
 
                         <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
 
-                        <Input
+                        <NumpadInput
 
                           value={enteredPrice ?? ''}
 
-                          onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+                          onChange={(value) => handlePriceChange(item.id, value)}
 
                           placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
 
-                          inputMode="decimal"
+                          allowDecimal={true}
 
-                          type="number"
+                          step={0.01}
 
-                          step="0.01"
-
-                          className="text-xs h-8"
+                          className="text-xs"
 
                         />
 
@@ -4481,45 +4469,19 @@ Lutfen tekrar deneyin.`);
 
                       <p className="text-sm text-muted-foreground mb-1">Yeni Fiyat</p>
 
-                      <Input
+                      <NumpadInput
 
                         value={enteredPrice ?? ''}
 
-                        onChange={(event) => handlePriceInputChange(item.id, event.target.value)}
+                        onChange={(value) => handlePriceChange(item.id, value)}
 
                         placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
 
-                        inputMode="decimal"
+                        allowDecimal={true}
 
-                        type="number"
-
-                        step="0.01"
-
-                        className="h-9 text-center"
+                        step={0.01}
 
                       />
-
-                    </div>
-
-                  </div>
-
-
-
-                  <div className="grid grid-cols-2 gap-3">
-
-                    <div className="text-center">
-
-                      <p className="text-sm text-muted-foreground mb-1">Önceki Fiyat</p>
-
-                      <p className="bg-purple-50 text-purple-800 px-2 py-1.5 rounded font-medium">{formatPrice(previousPrice)}</p>
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-sm text-muted-foreground mb-1">Sonraki Fiyat</p>
-
-                      <p className="bg-green-50 text-green-800 px-2 py-1.5 rounded font-medium">{formatPrice(nextPrice)}</p>
 
                     </div>
 
