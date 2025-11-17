@@ -9,9 +9,11 @@ interface NumpadInputProps {
   placeholder?: string;
   className?: string;
   defaultValue?: number;
+  allowDecimal?: boolean;
+  step?: number;
 }
 
-export function NumpadInput({ value, onChange, placeholder = "0", className = "", defaultValue }: NumpadInputProps) {
+export function NumpadInput({ value, onChange, placeholder = "0", className = "", defaultValue, allowDecimal = false, step = 1 }: NumpadInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState(value.toString());
   const [isNewInput, setIsNewInput] = useState(false); // Track if this is a fresh input
@@ -39,6 +41,12 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
       if (/^Numpad[0-9]$/.test(code)) {
         e.preventDefault();
         handleNumberClick(code.replace('Numpad', ''));
+        return;
+      }
+      // Decimal point
+      if (allowDecimal && (key === '.' || key === ',' || code === 'NumpadDecimal')) {
+        e.preventDefault();
+        handleDecimalClick();
         return;
       }
       if (key === 'Backspace') {
@@ -79,7 +87,7 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
 
   const handleNumberClick = (num: string) => {
     let newValue: string;
-    
+
     // If this is a new input (first number click after opening), replace the value
     if (isNewInput) {
       newValue = num;
@@ -88,9 +96,26 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
       // Continue building the current number
       newValue = displayValue === '' || displayValue === '0' ? num : displayValue + num;
     }
-    
+
     setDisplayValue(newValue);
-    const numericValue = parseInt(newValue) || 0;
+    const numericValue = allowDecimal ? (parseFloat(newValue) || 0) : (parseInt(newValue) || 0);
+    onChange(numericValue);
+  };
+
+  const handleDecimalClick = () => {
+    if (!allowDecimal) return;
+    if (displayValue.includes('.')) return; // Already has decimal point
+
+    let newValue: string;
+    if (isNewInput || displayValue === '' || displayValue === '0') {
+      newValue = '0.';
+      setIsNewInput(false);
+    } else {
+      newValue = displayValue + '.';
+    }
+
+    setDisplayValue(newValue);
+    const numericValue = parseFloat(newValue) || 0;
     onChange(numericValue);
   };
 
@@ -104,21 +129,28 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
     const newValue = displayValue.slice(0, -1);
     setDisplayValue(newValue);
     setIsNewInput(false); // Reset new input flag when editing
-    onChange(newValue === '' ? '' : parseInt(newValue) || 0);
+    if (newValue === '') {
+      onChange('');
+    } else {
+      const numericValue = allowDecimal ? (parseFloat(newValue) || 0) : (parseInt(newValue) || 0);
+      onChange(numericValue);
+    }
   };
 
   const handleIncrement = () => {
-    const currentValue = parseInt(displayValue) || 0;
-    const newValue = currentValue + 1;
-    setDisplayValue(newValue.toString());
+    const currentValue = allowDecimal ? (parseFloat(displayValue) || 0) : (parseInt(displayValue) || 0);
+    const newValue = currentValue + step;
+    const displayString = allowDecimal ? newValue.toFixed(2) : newValue.toString();
+    setDisplayValue(displayString);
     setIsNewInput(false); // Reset new input flag when using increment
     onChange(newValue);
   };
 
   const handleDecrement = () => {
-    const currentValue = parseInt(displayValue) || 0;
-    const newValue = Math.max(0, currentValue - 1);
-    setDisplayValue(newValue.toString());
+    const currentValue = allowDecimal ? (parseFloat(displayValue) || 0) : (parseInt(displayValue) || 0);
+    const newValue = Math.max(0, currentValue - step);
+    const displayString = allowDecimal ? newValue.toFixed(2) : newValue.toString();
+    setDisplayValue(displayString);
     setIsNewInput(false); // Reset new input flag when using decrement
     onChange(newValue);
   };
@@ -216,13 +248,23 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
                 {num}
               </Button>
             ))}
-            <Button
-              variant="outline"
-              onClick={handleClear}
-              className="h-10 sm:h-12 text-xs sm:text-sm"
-            >
-              Temizle
-            </Button>
+            {allowDecimal ? (
+              <Button
+                variant="outline"
+                onClick={handleDecimalClick}
+                className="h-10 sm:h-12 text-base sm:text-lg"
+              >
+                .
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={handleClear}
+                className="h-10 sm:h-12 text-xs sm:text-sm"
+              >
+                Temizle
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => handleNumberClick('0')}
@@ -238,6 +280,17 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
               ←
             </Button>
           </div>
+
+          {/* Clear button for decimal mode */}
+          {allowDecimal && (
+            <Button
+              variant="outline"
+              onClick={handleClear}
+              className="w-full"
+            >
+              Temizle
+            </Button>
+          )}
 
           {/* Confirm Button */}
           <Button 
