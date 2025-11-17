@@ -4179,31 +4179,25 @@ Lutfen tekrar deneyin.`);
 
                   {/* Fiyat Bilgileri - Stok Sistemi Görünümü */}
 
-                  <div className="space-y-2 border-t pt-3">
+                  <div className="grid grid-cols-2 gap-3">
 
-                    <p className="text-xs font-semibold text-muted-foreground">FİYAT BİLGİLERİ</p>
+                    <div className="text-center">
 
+                      <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
 
-
-                    <div className="grid grid-cols-2 gap-2">
-
-                      <div className="text-center">
-
-                        <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
-
-                        <p className="bg-blue-50 text-blue-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(currentPrice)}</p>
-
-                      </div>
-
-                      <div className="text-center">
-
-                        <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
-
-                        <p className="bg-orange-50 text-orange-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(cost)}</p>
-
-                      </div>
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
 
                     </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
+
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
+
+                    </div>
+
+                  </div>
 
 
 
@@ -4441,19 +4435,13 @@ Lutfen tekrar deneyin.`);
 
                   {/* Desktop Price Section - Below Stock Info */}
 
-                  <div className="border-t pt-3 mt-3">
-
-                  <p className="text-xs font-semibold text-muted-foreground mb-3">FİYAT BİLGİLERİ</p>
-
-
-
                   <div className="grid grid-cols-3 gap-3 mb-3">
 
                     <div className="text-center">
 
                       <p className="text-sm text-muted-foreground mb-1">Mevcut Fiyat</p>
 
-                      <p className="bg-blue-50 text-blue-800 px-2 py-1.5 rounded font-medium">{formatPrice(currentPrice)}</p>
+                      <p className="bg-muted px-2 py-1.5 rounded">{formatPrice(currentPrice)}</p>
 
                     </div>
 
@@ -4461,7 +4449,7 @@ Lutfen tekrar deneyin.`);
 
                       <p className="text-sm text-muted-foreground mb-1">Maliyet</p>
 
-                      <p className="bg-orange-50 text-orange-800 px-2 py-1.5 rounded font-medium">{formatPrice(cost)}</p>
+                      <p className="bg-muted px-2 py-1.5 rounded">{formatPrice(cost)}</p>
 
                     </div>
 
@@ -4484,8 +4472,6 @@ Lutfen tekrar deneyin.`);
                       />
 
                     </div>
-
-                  </div>
 
                   </div>
 
