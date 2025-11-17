@@ -4179,6 +4179,8 @@ Lutfen tekrar deneyin.`);
 
                   {/* Fiyat Bilgileri - Stok Sistemi Görünümü */}
 
+                  <div>
+
                   <div className="grid grid-cols-2 gap-3">
 
                     <div className="text-center">
@@ -4201,59 +4203,59 @@ Lutfen tekrar deneyin.`);
 
 
 
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
 
-                      <div>
+                    <div>
 
-                        <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
+                      <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
 
-                        <NumpadInput
+                      <NumpadInput
 
-                          value={enteredPrice ?? ''}
+                        value={enteredPrice ?? ''}
 
-                          onChange={(value) => handlePriceChange(item.id, value)}
+                        onChange={(value) => handlePriceChange(item.id, value)}
 
-                          placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
 
-                          allowDecimal={true}
+                        allowDecimal={true}
 
-                          step={0.01}
+                        step={0.01}
 
-                          className="text-xs"
+                        className="text-xs"
 
-                        />
-
-                      </div>
-
-                      <div className="text-center">
-
-                        <p className="text-xs text-muted-foreground mb-1">Fark</p>
-
-                        <p className={`px-1 py-1 rounded text-xs font-semibold ${
-
-                          priceDiff !== null
-
-                            ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                              priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-
-                            : 'bg-muted'
-
-                        }`}>
-
-                          {priceDiff !== null
-
-                            ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
-
-                            : '-'
-
-                          }
-
-                        </p>
-
-                      </div>
+                      />
 
                     </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
+
+                      <p className={`px-1 py-1 rounded text-xs font-semibold ${
+
+                        priceDiff !== null
+
+                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+
+                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+
+                          : 'bg-muted'
+
+                      }`}>
+
+                        {priceDiff !== null
+
+                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
+
+                          : '-'
+
+                        }
+
+                      </p>
+
+                    </div>
+
+                  </div>
 
                   </div>
 
