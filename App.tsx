@@ -327,7 +327,7 @@ export default function App() {
 
 
 
-  const handlePreviousPriceChange = (id: string, inputValue: string) => {
+  const _handlePreviousPriceChange = (id: string, inputValue: string) => {
 
     const normalized = inputValue.replace(',', '.').trim();
 
@@ -369,7 +369,7 @@ export default function App() {
 
 
 
-  const handleNextPriceChange = (id: string, inputValue: string) => {
+  const _handleNextPriceChange = (id: string, inputValue: string) => {
 
     const normalized = inputValue.replace(',', '.').trim();
 
@@ -1969,64 +1969,6 @@ Lutfen tekrar deneyin.`);
 
 
 
-    const _testProductImages = async () => {
-
-      if (!testProductId) return;
-
-      _setTestLoading(true);
-
-      _setTestResult(null);
-
-      _setTestError(null);
-
-      const url = `${apiBase}/v2.0/products/${testProductId}/images`;
-
-      addLog('info', 'IMAGE_TEST', `GÃƒ¶rsel test ba?lat?ld?: ${testProductId}`, { url });
-
-      try {
-
-        const response = await fetch(url, {
-
-          headers: {
-
-            'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
-
-          },
-
-        });
-
-        if (!response.ok) {
-
-          throw new Error(`HTTP ${response.status}`);
-
-        }
-
-        const imageData = await response.json();
-
-        const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? []);
-
-        addLog('success', 'IMAGE_TEST', `Bulunan gÃƒ¶rsel say?s?: ${dataArray.length}`);
-
-        _setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
-
-      } catch (err) {
-
-        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-
-        addLog('error', 'IMAGE_TEST', `GÃƒ¶rsel test hatas?: ${msg}`);
-
-        _setTestError(msg);
-
-      } finally {
-
-        _setTestLoading(false);
-
-      }
-
-    };
-
-
-
     return (
 
       <div className="space-y-6">
@@ -2673,19 +2615,77 @@ Lutfen tekrar deneyin.`);
 
     const [testProductId, setTestProductId] = useState('');
 
-    const [_testLoading, _setTestLoading] = useState(false);
+    const [testLoading, setTestLoading] = useState(false);
 
-    const [_testResult, _setTestResult] = useState<unknown>(null);
+    const [testResult, setTestResult] = useState<unknown>(null);
 
-    const [_testError, _setTestError] = useState<string | null>(null);
+    const [testError, setTestError] = useState<string | null>(null);
 
-    
 
-    const filteredLogs = systemLogs.filter(log => 
+
+    const filteredLogs = systemLogs.filter(log =>
 
       logFilter === 'all' || log.level === logFilter
 
     );
+
+
+
+    const testProductImages = async (): Promise<void> => {
+
+      if (!testProductId) return;
+
+      setTestLoading(true);
+
+      setTestResult(null);
+
+      setTestError(null);
+
+      const url = `${apiBase}/v2.0/products/${testProductId}/images`;
+
+      addLog('info', 'IMAGE_TEST', `GÃƒ¶rsel test ba?lat?ld?: ${testProductId}`, { url });
+
+      try {
+
+        const response = await fetch(url, {
+
+          headers: {
+
+            'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          },
+
+        });
+
+        if (!response.ok) {
+
+          throw new Error(`HTTP ${response.status}`);
+
+        }
+
+        const imageData = await response.json();
+
+        const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? []);
+
+        addLog('success', 'IMAGE_TEST', `Bulunan gÃƒ¶rsel say?s?: ${dataArray.length}`);
+
+        setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
+
+      } catch (err) {
+
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+
+        addLog('error', 'IMAGE_TEST', `GÃƒ¶rsel test hatas?: ${msg}`);
+
+        setTestError(msg);
+
+      } finally {
+
+        setTestLoading(false);
+
+      }
+
+    };
 
 
 
@@ -3979,7 +3979,7 @@ Lutfen tekrar deneyin.`);
 
                   : null;
 
-              const priceChangeDiff = previousPrice !== null && nextPrice !== null
+              const _priceChangeDiff = previousPrice !== null && nextPrice !== null
 
                 ? nextPrice - previousPrice
 
@@ -4195,81 +4195,21 @@ Lutfen tekrar deneyin.`);
 
 
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
 
-                      <div>
+                      <div className="text-center">
 
                         <p className="text-xs text-muted-foreground mb-1">Önceki Fiyat</p>
 
-                        <Input
-
-                          value={enteredPreviousPrice ?? ''}
-
-                          onChange={(event) => handlePreviousPriceChange(item.id, event.target.value)}
-
-                          placeholder={previousPrice !== null ? formatPrice(previousPrice) : '0.00'}
-
-                          inputMode="decimal"
-
-                          type="number"
-
-                          step="0.01"
-
-                          className="text-xs h-8"
-
-                        />
-
-                      </div>
-
-                      <div>
-
-                        <p className="text-xs text-muted-foreground mb-1">Sonraki Fiyat</p>
-
-                        <Input
-
-                          value={enteredNextPrice ?? ''}
-
-                          onChange={(event) => handleNextPriceChange(item.id, event.target.value)}
-
-                          placeholder={nextPrice !== null ? formatPrice(nextPrice) : '0.00'}
-
-                          inputMode="decimal"
-
-                          type="number"
-
-                          step="0.01"
-
-                          className="text-xs h-8"
-
-                        />
+                        <p className="bg-purple-50 text-purple-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(previousPrice)}</p>
 
                       </div>
 
                       <div className="text-center">
 
-                        <p className="text-xs text-muted-foreground mb-1">Fiyat Farkı</p>
+                        <p className="text-xs text-muted-foreground mb-1">Sonraki Fiyat</p>
 
-                        <p className={`px-1 py-1 rounded text-xs font-semibold ${
-
-                          priceChangeDiff !== null
-
-                            ? priceChangeDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                              priceChangeDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-
-                            : 'bg-muted'
-
-                        }`}>
-
-                          {priceChangeDiff !== null
-
-                            ? `${priceChangeDiff > 0 ? '+' : ''}${priceChangeDiff.toFixed(2)}`
-
-                            : '-'
-
-                          }
-
-                        </p>
+                        <p className="bg-green-50 text-green-800 px-2 py-1 rounded text-sm font-medium">{formatPrice(nextPrice)}</p>
 
                       </div>
 
@@ -4341,7 +4281,9 @@ Lutfen tekrar deneyin.`);
 
                 {/* Desktop Layout */}
 
-                <div className="hidden sm:flex items-center justify-between gap-4">
+                <div className="hidden sm:block">
+
+                  <div className="flex items-center justify-between gap-4 mb-3">
 
                   <div className="flex items-center gap-3 flex-1">
 
@@ -4505,107 +4447,39 @@ Lutfen tekrar deneyin.`);
 
                   </div>
 
+                  </div>
 
 
-                  {/* Desktop Price Section */}
 
-                  <div className="flex items-center gap-2 text-sm border-t pt-2 mt-2">
+                  {/* Desktop Price Section - Below Stock Info */}
 
-                    <div className="text-center min-w-[90px]">
+                  <div className="border-t pt-3 mt-3">
 
-                      <p className="text-muted-foreground">Mevcut Fiyat</p>
+                  <p className="text-xs font-semibold text-muted-foreground mb-3">FİYAT BİLGİLERİ</p>
 
-                      <p className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-medium">{formatPrice(currentPrice)}</p>
 
-                    </div>
 
-                    <div className="text-center min-w-[90px]">
+                  <div className="grid grid-cols-3 gap-3 mb-3">
 
-                      <p className="text-muted-foreground">Maliyet</p>
+                    <div className="text-center">
 
-                      <p className="bg-orange-50 text-orange-800 px-2 py-1 rounded font-medium">{formatPrice(cost)}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Mevcut Fiyat</p>
 
-                    </div>
-
-                    <div className="w-24">
-
-                      <p className="text-muted-foreground">Önceki Fiyat</p>
-
-                      <Input
-
-                        value={enteredPreviousPrice ?? ''}
-
-                        onChange={(event) => handlePreviousPriceChange(item.id, event.target.value)}
-
-                        placeholder={previousPrice !== null ? formatPrice(previousPrice) : '0.00'}
-
-                        inputMode="decimal"
-
-                        type="number"
-
-                        step="0.01"
-
-                        className="h-8"
-
-                      />
+                      <p className="bg-blue-50 text-blue-800 px-2 py-1.5 rounded font-medium">{formatPrice(currentPrice)}</p>
 
                     </div>
 
-                    <div className="w-24">
+                    <div className="text-center">
 
-                      <p className="text-muted-foreground">Sonraki Fiyat</p>
+                      <p className="text-sm text-muted-foreground mb-1">Maliyet</p>
 
-                      <Input
-
-                        value={enteredNextPrice ?? ''}
-
-                        onChange={(event) => handleNextPriceChange(item.id, event.target.value)}
-
-                        placeholder={nextPrice !== null ? formatPrice(nextPrice) : '0.00'}
-
-                        inputMode="decimal"
-
-                        type="number"
-
-                        step="0.01"
-
-                        className="h-8"
-
-                      />
+                      <p className="bg-orange-50 text-orange-800 px-2 py-1.5 rounded font-medium">{formatPrice(cost)}</p>
 
                     </div>
 
-                    <div className="text-center min-w-[70px]">
+                    <div className="text-center">
 
-                      <p className="text-muted-foreground">Fiyat Farkı</p>
-
-                      <p className={`px-2 py-1 rounded font-semibold ${
-
-                        priceChangeDiff !== null
-
-                          ? priceChangeDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                            priceChangeDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-
-                          : 'bg-muted'
-
-                      }`}>
-
-                        {priceChangeDiff !== null
-
-                          ? `${priceChangeDiff > 0 ? '+' : ''}${priceChangeDiff.toFixed(2)}`
-
-                          : '-'
-
-                        }
-
-                      </p>
-
-                    </div>
-
-                    <div className="w-28">
-
-                      <p className="text-muted-foreground">Yeni Fiyat (Güncelle)</p>
+                      <p className="text-sm text-muted-foreground mb-1">Yeni Fiyat</p>
 
                       <Input
 
@@ -4621,39 +4495,35 @@ Lutfen tekrar deneyin.`);
 
                         step="0.01"
 
-                        className="h-8"
+                        className="h-9 text-center"
 
                       />
 
                     </div>
 
-                    <div className="text-center min-w-[70px]">
+                  </div>
 
-                      <p className="text-muted-foreground">Fark</p>
 
-                      <p className={`px-2 py-1 rounded font-semibold ${
 
-                        priceDiff !== null
+                  <div className="grid grid-cols-2 gap-3">
 
-                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
+                    <div className="text-center">
 
-                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                      <p className="text-sm text-muted-foreground mb-1">Önceki Fiyat</p>
 
-                          : 'bg-muted'
-
-                      }`}>
-
-                        {priceDiff !== null
-
-                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
-
-                          : '-'
-
-                        }
-
-                      </p>
+                      <p className="bg-purple-50 text-purple-800 px-2 py-1.5 rounded font-medium">{formatPrice(previousPrice)}</p>
 
                     </div>
+
+                    <div className="text-center">
+
+                      <p className="text-sm text-muted-foreground mb-1">Sonraki Fiyat</p>
+
+                      <p className="bg-green-50 text-green-800 px-2 py-1.5 rounded font-medium">{formatPrice(nextPrice)}</p>
+
+                    </div>
+
+                  </div>
 
                   </div>
 
