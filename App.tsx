@@ -29,7 +29,7 @@ import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
 
 import { formatPrice } from './utils/product';
 import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost } from './services/api';
 
 
 
@@ -46,6 +46,12 @@ export default function App() {
   const [previousPriceValues, setPreviousPriceValues] = useState<{ [key: string]: number | '' }>({});
 
   const [nextPriceValues, setNextPriceValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [costValues, setCostValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [previousCostValues, setPreviousCostValues] = useState<{ [key: string]: number | '' }>({});
+
+  const [nextCostValues, setNextCostValues] = useState<{ [key: string]: number | '' }>({});
 
   const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
 
@@ -337,6 +343,18 @@ export default function App() {
 
   };
 
+  const handleCostChange = (id: string, value: number | '') => {
+
+    setCostValues(prev => ({
+
+      ...prev,
+
+      [id]: value
+
+    }));
+
+  };
+
 
 
   const _handlePreviousPriceChange = (id: string, inputValue: string) => {
@@ -593,6 +611,58 @@ export default function App() {
 
 
 
+  const updateProductCost = async (productId: string, newCostValue: number) => {
+
+    try {
+
+      const baseCostPath = joinApi(apiConfig.costEndpoint || '/cost');
+
+      const normalizedBase = baseCostPath.endsWith('/') ? baseCostPath.slice(0, -1) : baseCostPath;
+
+      const formattedCost = newCostValue.toString();
+
+      const url = `${normalizedBase}/${productId}/${encodeURIComponent(formattedCost)}`;
+
+      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${formattedCost}`, { url });
+
+      const response = await fetch(url, {
+
+        method: 'POST',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+      });
+
+      if (!response.ok) {
+
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      }
+
+      addLog('success', 'COST_API', `Maliyet guncellendi: ID ${productId} -> ${formattedCost}`);
+
+      const result = await response.json().catch(() => ({ success: true }));
+
+      return result;
+
+    } catch (error) {
+
+      addLog('error', 'COST_API', `Maliyet guncellenemedi: ID ${productId}`, error);
+
+      throw error;
+
+    }
+
+  };
+
+
+
   // Promise Pool for parallel API calls with concurrency limit
 
   const updateStockBatch = async (updates: Array<{ productId: string; newStock: number }>) => {
@@ -773,6 +843,94 @@ export default function App() {
 
 
 
+  const updateCostBatch = async (updates: Array<{ productId: string; newCost: number }>) => {
+
+    if (updates.length === 0) {
+
+      return [];
+
+    }
+
+
+
+    const concurrency = 5;
+
+    const results: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+
+
+    setIsUpdatingStock(true);
+
+    setUpdateProgress({ current: 0, total: updates.length });
+
+
+
+    try {
+
+      for (let i = 0; i < updates.length; i += concurrency) {
+
+        const batch = updates.slice(i, i + concurrency);
+
+        const batchPromises = batch.map(async (update) => {
+
+          try {
+
+            await updateProductCost(update.productId, update.newCost);
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return { success: true, productId: update.productId };
+
+          } catch (error) {
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return {
+
+              success: false,
+
+              productId: update.productId,
+
+              error: error instanceof Error ? error.message : 'Unknown error'
+
+            };
+
+          }
+
+        });
+
+
+
+        const batchResults = await Promise.all(batchPromises);
+
+        results.push(...batchResults);
+
+
+
+        if (i + concurrency < updates.length) {
+
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        }
+
+      }
+
+
+
+      return results;
+
+    } finally {
+
+      setIsUpdatingStock(false);
+
+      setUpdateProgress({ current: 0, total: 0 });
+
+    }
+
+  };
+
+
+
   // API Functions
 
   const fetchProductGroups = async () => {
@@ -853,6 +1011,8 @@ export default function App() {
 
     const priceUpdates: Array<{ productId: string; newPrice: number }> = [];
 
+    const costUpdates: Array<{ productId: string; newCost: number }> = [];
+
 
 
     const updatedStockData = stockData.map(item => {
@@ -862,6 +1022,8 @@ export default function App() {
       const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
 
       const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+
+      const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
 
 
 
@@ -884,6 +1046,10 @@ export default function App() {
       const previousPrice = typeof item.price === 'number' ? item.price : undefined;
 
       const priceChanged = pendingPrice !== null && (previousPrice === undefined || Math.abs(pendingPrice - previousPrice) > 0.0001);
+
+      const previousCost = typeof item.cost === 'number' ? item.cost : undefined;
+
+      const costChanged = pendingCost !== null && (previousCost === undefined || Math.abs(pendingCost - previousCost) > 0.0001);
 
 
 
@@ -915,13 +1081,39 @@ export default function App() {
 
 
 
-      if (stockChanged || priceChanged) {
+      if (costChanged) {
+
+        costUpdates.push({
+
+          productId: item.id,
+
+          newCost: pendingCost as number
+
+        });
+
+      }
+
+
+
+      if (stockChanged || priceChanged || costChanged) {
 
         let reason = '';
 
-        if (stockChanged && priceChanged) {
+        if (stockChanged && priceChanged && costChanged) {
+
+          reason = 'Stok + Fiyat + Maliyet';
+
+        } else if (stockChanged && priceChanged) {
 
           reason = 'Stok + Fiyat';
+
+        } else if (stockChanged && costChanged) {
+
+          reason = 'Stok + Maliyet';
+
+        } else if (priceChanged && costChanged) {
+
+          reason = 'Fiyat + Maliyet';
 
         } else if (stockChanged) {
 
@@ -939,9 +1131,13 @@ export default function App() {
 
           }
 
-        } else {
+        } else if (priceChanged) {
 
           reason = 'Fiyat';
+
+        } else {
+
+          reason = 'Maliyet';
 
         }
 
@@ -952,6 +1148,12 @@ export default function App() {
         const computedPriceChange = priceChanged
 
           ? (previousPrice !== undefined ? (pendingPrice as number) - previousPrice : pendingPrice as number)
+
+          : undefined;
+
+        const computedCostChange = costChanged
+
+          ? (previousCost !== undefined ? (pendingCost as number) - previousCost : pendingCost as number)
 
           : undefined;
 
@@ -981,7 +1183,13 @@ export default function App() {
 
           newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
 
-          priceChange: computedPriceChange
+          priceChange: computedPriceChange,
+
+          previousCost,
+
+          newCost: costChanged ? (pendingCost as number) : previousCost,
+
+          costChange: computedCostChange
 
         });
 
@@ -995,7 +1203,9 @@ export default function App() {
 
         count: finalCount,
 
-        price: priceChanged ? (pendingPrice as number) : item.price
+        price: priceChanged ? (pendingPrice as number) : item.price,
+
+        cost: costChanged ? (pendingCost as number) : item.cost
 
       };
 
@@ -1003,7 +1213,7 @@ export default function App() {
 
 
 
-    if (stockUpdates.length === 0 && priceUpdates.length === 0) {
+    if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0) {
 
       alert('Guncellenecek stok veya fiyat degisikligi bulunamadi!');
 
@@ -1027,11 +1237,17 @@ export default function App() {
 
     }
 
+    if (costUpdates.length > 0) {
+
+      summaryParts.push(`Maliyet: ${costUpdates.length} urun`);
+
+    }
+
 
 
     const confirmMessageLines: string[] = [
 
-      `Toplam ${stockUpdates.length + priceUpdates.length} guncelleme uygulanacak.`
+      `Toplam ${stockUpdates.length + priceUpdates.length + costUpdates.length} guncelleme uygulanacak.`
 
     ];
 
@@ -1059,6 +1275,8 @@ export default function App() {
 
       let priceResults: Array<{ success: boolean; productId: string; error?: string }> = [];
 
+      let costResults: Array<{ success: boolean; productId: string; error?: string }> = [];
+
 
 
       if (stockUpdates.length > 0) {
@@ -1076,6 +1294,16 @@ export default function App() {
         addLog('info', 'PRICE_BATCH', `${priceUpdates.length} urunun fiyati guncelleniyor...`, priceUpdates);
 
         priceResults = await updatePriceBatch(priceUpdates);
+
+      }
+
+
+
+      if (costUpdates.length > 0) {
+
+        addLog('info', 'COST_BATCH', `${costUpdates.length} urunun maliyeti guncelleniyor...`, costUpdates);
+
+        costResults = await updateCostBatch(costUpdates);
 
       }
 
@@ -1105,6 +1333,30 @@ export default function App() {
 
 
 
+      // Save previous/next cost values to localStorage
+
+      Object.entries(previousCostValues).forEach(([productId, cost]) => {
+
+        if (typeof cost === 'number') {
+
+          updatePreviousCost(productId, cost);
+
+        }
+
+      });
+
+      Object.entries(nextCostValues).forEach(([productId, cost]) => {
+
+        if (typeof cost === 'number') {
+
+          updateNextCost(productId, cost);
+
+        }
+
+      });
+
+
+
       const failedStock = stockResults.filter(result => !result.success);
 
       const successfulStock = stockResults.filter(result => result.success);
@@ -1112,6 +1364,10 @@ export default function App() {
       const failedPrice = priceResults.filter(result => !result.success);
 
       const successfulPrice = priceResults.filter(result => result.success);
+
+      const failedCost = costResults.filter(result => !result.success);
+
+      const successfulCost = costResults.filter(result => result.success);
 
 
 
@@ -1179,7 +1435,39 @@ export default function App() {
 
 
 
-      const totalFailures = failedStock.length + failedPrice.length;
+      if (costUpdates.length > 0) {
+
+        if (failedCost.length > 0) {
+
+          const failedProducts = failedCost.map(f => {
+
+            const product = stockData.find(p => p.id === f.productId);
+
+            return product?.name || f.productId;
+
+          }).join(', ');
+
+          addLog('warning', 'COST_BATCH', `Kismi basari: ${successfulCost.length} basarili, ${failedCost.length} basarisiz`, {
+
+            successful: successfulCost.length,
+
+            failed: failedCost.length,
+
+            failedProducts
+
+          });
+
+        } else {
+
+          addLog('success', 'COST_BATCH', `Tum maliyet guncellemeleri basarili: ${successfulCost.length} urun`);
+
+        }
+
+      }
+
+
+
+      const totalFailures = failedStock.length + failedPrice.length + failedCost.length;
 
       if (totalFailures > 0) {
 
@@ -1194,6 +1482,12 @@ export default function App() {
         if (priceUpdates.length > 0) {
 
           failureLines.push(`Fiyat - basarili: ${successfulPrice.length}, basarisiz: ${failedPrice.length}`);
+
+        }
+
+        if (costUpdates.length > 0) {
+
+          failureLines.push(`Maliyet - basarili: ${successfulCost.length}, basarisiz: ${failedCost.length}`);
 
         }
 
@@ -1215,6 +1509,12 @@ export default function App() {
 
         }
 
+        if (costUpdates.length > 0) {
+
+          successLines.push(`${successfulCost.length} maliyet guncellemesi`);
+
+        }
+
         alert(`Tum guncellemeler basariyla tamamlandi!\n\n${successLines.join('\n')}`);
 
       }
@@ -1230,6 +1530,8 @@ export default function App() {
       setAddedValues({});
 
       setPriceValues({});
+
+      setCostValues({});
 
     } catch (error) {
 
@@ -3997,6 +4299,16 @@ Lutfen tekrar deneyin.`);
 
                 : null;
 
+              const enteredCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+
+              const enteredPreviousCost = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] : null;
+
+              const previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
+
+              const enteredNextCost = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] : null;
+
+              const nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
+
               return (
 
               <div key={item.id} className="bg-card border rounded-lg p-3 sm:p-4">
@@ -4179,35 +4491,19 @@ Lutfen tekrar deneyin.`);
 
                   {/* Fiyat Bilgileri - Stok Sistemi Görünümü */}
 
-                  <div>
-
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-4 gap-2">
 
                     <div className="text-center">
 
-                      <p className="text-xs text-muted-foreground mb-1">Mevcut Fiyat</p>
+                      <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
 
                       <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
 
                     </div>
 
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
-
-                    </div>
-
-                  </div>
-
-
-
-                  <div className="grid grid-cols-3 gap-2">
-
                     <div>
 
-                      <p className="text-xs text-muted-foreground mb-1">Yeni Fiyat (Güncelle)</p>
+                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
 
                       <NumpadInput
 
@@ -4215,7 +4511,7 @@ Lutfen tekrar deneyin.`);
 
                         onChange={(value) => handlePriceChange(item.id, value)}
 
-                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+                        placeholder="0.00"
 
                         allowDecimal={true}
 
@@ -4229,33 +4525,33 @@ Lutfen tekrar deneyin.`);
 
                     <div className="text-center">
 
-                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
+                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
 
-                      <p className={`px-1 py-1 rounded text-xs font-semibold ${
-
-                        priceDiff !== null
-
-                          ? priceDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                            priceDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-
-                          : 'bg-muted'
-
-                      }`}>
-
-                        {priceDiff !== null
-
-                          ? `${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)}`
-
-                          : '-'
-
-                        }
-
-                      </p>
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
 
                     </div>
 
-                  </div>
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredCost ?? ''}
+
+                        onChange={(value) => handleCostChange(item.id, value)}
+
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
 
                   </div>
 
@@ -4437,27 +4733,19 @@ Lutfen tekrar deneyin.`);
 
                   {/* Desktop Price Section - Below Stock Info */}
 
-                  <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="flex items-center gap-2 text-sm mb-3">
 
-                    <div className="text-center">
+                    <div className="text-center min-w-[60px]">
 
-                      <p className="text-sm text-muted-foreground mb-1">Mevcut Fiyat</p>
+                      <p className="text-muted-foreground">Fiyat</p>
 
-                      <p className="bg-muted px-2 py-1.5 rounded">{formatPrice(currentPrice)}</p>
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-sm text-muted-foreground mb-1">Maliyet</p>
-
-                      <p className="bg-muted px-2 py-1.5 rounded">{formatPrice(cost)}</p>
+                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
 
                     </div>
 
                     <div className="w-20">
 
-                      <p className="text-sm text-muted-foreground mb-1">Yeni Fiyat</p>
+                      <p className="text-muted-foreground">Yeni</p>
 
                       <NumpadInput
 
@@ -4465,7 +4753,35 @@ Lutfen tekrar deneyin.`);
 
                         onChange={(value) => handlePriceChange(item.id, value)}
 
-                        placeholder={currentPrice !== null ? formatPrice(currentPrice) : '0.00'}
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                      />
+
+                    </div>
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Maliyet</p>
+
+                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(cost)}</p>
+
+                    </div>
+
+                    <div className="w-20">
+
+                      <p className="text-muted-foreground">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredCost ?? ''}
+
+                        onChange={(value) => handleCostChange(item.id, value)}
+
+                        placeholder="0.00"
 
                         allowDecimal={true}
 
