@@ -3293,7 +3293,7 @@ Lutfen tekrar deneyin.`);
       productsUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.endpoint}?${apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}"`,
       categoriesUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.groupsEndpoint}"`,
       stockUpdateUrl: `curl -u ${apiConfig.username}:${apiConfig.password} -X POST "http://${apiConfig.serverIP}/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]"`,
-      priceUpdateUrl: `curl -H "Content-Type: application/json" -u ${apiConfig.username}:${apiConfig.password} -X PUT "http://${apiConfig.serverIP}${joinApi('/v2.0/products')}" -d '{"id": [PRODUCT_ID], "price": [NEW_PRICE], "cost": [NEW_COST]}'`
+      priceUpdateUrl: `curl -H "Content-Type: application/json" -u ${apiConfig.username}:${apiConfig.password} -X PUT "http://${apiConfig.serverIP}${joinApi('/v2.0/products')}" -d '{"id": [PRODUCT_ID], "productType": [PRODUCT_TYPE], "guid": "[PRODUCT_GUID]", "productGroupId": [PRODUCT_GROUP_ID], "name": "[PRODUCT_NAME]", "price": [NEW_PRICE], "cost": [NEW_COST], "barcode": "[BARCODE]"}'`
     });
 
 
@@ -4083,7 +4083,7 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-xs text-muted-foreground mt-2">
 
-                Örnek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "price": 199.90, "cost": 100{`}`}'
+                Örnek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "productType": 0, "guid": "abc-123", "productGroupId": 5, "name": "Ürün Adı", "price": 199.90, "cost": 100, "barcode": "1234567890"{`}`}'
 
               </p>
 
