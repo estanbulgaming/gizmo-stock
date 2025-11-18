@@ -598,11 +598,17 @@ export default function App() {
 
       if (!getResponse.ok) {
 
-        throw new Error(`HTTP error! status: ${getResponse.status}`);
+        const errorText = await getResponse.text();
+
+        addLog('error', 'PRICE_API', `GET request failed: ${getResponse.status}`, { url: getUrl, status: getResponse.status, errorText });
+
+        throw new Error(`HTTP error! status: ${getResponse.status}, body: ${errorText}`);
 
       }
 
       const productData = await getResponse.json();
+
+      addLog('info', 'PRICE_API', `Ürün bilgisi alındı: ID ${productId}`, { productData });
 
       // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
@@ -639,7 +645,11 @@ export default function App() {
 
       if (!putResponse.ok) {
 
-        throw new Error(`HTTP error! status: ${putResponse.status}`);
+        const errorText = await putResponse.text();
+
+        addLog('error', 'PRICE_API', `PUT request failed: ${putResponse.status}`, { url: putUrl, status: putResponse.status, errorText });
+
+        throw new Error(`HTTP error! status: ${putResponse.status}, body: ${errorText}`);
 
       }
 
