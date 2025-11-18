@@ -610,17 +610,20 @@ export default function App() {
 
       addLog('info', 'PRICE_API', `Ürün bilgisi alındı: ID ${productId}`, { productData });
 
+      // API response'u result objesi içinde dönüyor
+      const product = productData.result || productData;
+
       // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
-        id: productData.id,
-        productType: productData.productType,
-        guid: productData.guid,
-        productImages: productData.productImages,
-        productGroupId: productData.productGroupId,
-        name: productData.name,
+        id: product.id,
+        productType: product.productType,
+        guid: product.guid,
+        productImages: product.productImages,
+        productGroupId: product.productGroupId,
+        name: product.name,
         price: newPriceValue,
-        cost: productData.cost,
-        barcode: productData.barcode
+        cost: product.cost,
+        barcode: product.barcode
       };
 
       const putUrl = joinApi('/v2.0/products');
@@ -702,17 +705,20 @@ export default function App() {
 
       const productData = await getResponse.json();
 
+      // API response'u result objesi içinde dönüyor
+      const product = productData.result || productData;
+
       // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
-        id: productData.id,
-        productType: productData.productType,
-        guid: productData.guid,
-        productImages: productData.productImages,
-        productGroupId: productData.productGroupId,
-        name: productData.name,
-        price: productData.price,
+        id: product.id,
+        productType: product.productType,
+        guid: product.guid,
+        productImages: product.productImages,
+        productGroupId: product.productGroupId,
+        name: product.name,
+        price: product.price,
         cost: newCostValue,
-        barcode: productData.barcode
+        barcode: product.barcode
       };
 
       const putUrl = joinApi('/v2.0/products');
@@ -790,16 +796,19 @@ export default function App() {
 
       const productData = await getResponse.json();
 
+      // API response'u result objesi içinde dönüyor
+      const product = productData.result || productData;
+
       // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
-        id: productData.id,
-        productType: productData.productType,
-        guid: productData.guid,
-        productImages: productData.productImages,
-        productGroupId: productData.productGroupId,
-        name: productData.name,
-        price: productData.price,
-        cost: productData.cost,
+        id: product.id,
+        productType: product.productType,
+        guid: product.guid,
+        productImages: product.productImages,
+        productGroupId: product.productGroupId,
+        name: product.name,
+        price: product.price,
+        cost: product.cost,
         barcode: newBarcodeValue
       };
 
