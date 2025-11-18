@@ -53,6 +53,8 @@ export default function App() {
 
   const [nextCostValues, setNextCostValues] = useState<{ [key: string]: number | '' }>({});
 
+  const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
+
   const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
 
   const [currentPage, setCurrentPage] = useState<'stock' | 'history' | 'settings'>('stock');
@@ -355,6 +357,18 @@ export default function App() {
 
   };
 
+  const handleBarcodeChange = (id: string, value: string) => {
+
+    setBarcodeValues(prev => ({
+
+      ...prev,
+
+      [id]: value
+
+    }));
+
+  };
+
 
 
   const _handlePreviousPriceChange = (id: string, inputValue: string) => {
@@ -590,10 +604,13 @@ export default function App() {
 
       const productData = await getResponse.json();
 
-      // Fiyatı güncelle ve PUT ile gönder
+      // Sadece gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
-        ...productData,
-        price: newPriceValue
+        id: productData.id,
+        name: productData.name,
+        price: newPriceValue,
+        cost: productData.cost,
+        barcode: productData.barcode
       };
 
       const putUrl = joinApi('/v2.0/products');
@@ -671,10 +688,13 @@ export default function App() {
 
       const productData = await getResponse.json();
 
-      // Maliyeti güncelle ve PUT ile gönder
+      // Sadece gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
-        ...productData,
-        cost: newCostValue
+        id: productData.id,
+        name: productData.name,
+        price: productData.price,
+        cost: newCostValue,
+        barcode: productData.barcode
       };
 
       const putUrl = joinApi('/v2.0/products');
@@ -712,6 +732,90 @@ export default function App() {
     } catch (error) {
 
       addLog('error', 'COST_API', `Maliyet guncellenemedi: ID ${productId}`, error);
+
+      throw error;
+
+    }
+
+  };
+
+
+
+  const updateProductBarcode = async (productId: string, newBarcodeValue: string) => {
+
+    try {
+
+      // Önce ürün bilgisini al
+      const getUrl = joinApi(`/v2.0/products/${productId}`);
+
+      addLog('info', 'BARCODE_API', `Ürün bilgisi alınıyor: ID ${productId}`, { getUrl });
+
+      const getResponse = await fetch(getUrl, {
+
+        method: 'GET',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+      });
+
+      if (!getResponse.ok) {
+
+        throw new Error(`HTTP error! status: ${getResponse.status}`);
+
+      }
+
+      const productData = await getResponse.json();
+
+      // Sadece gerekli alanlarla PUT isteği gönder
+      const updatedProduct = {
+        id: productData.id,
+        name: productData.name,
+        price: productData.price,
+        cost: productData.cost,
+        barcode: newBarcodeValue
+      };
+
+      const putUrl = joinApi('/v2.0/products');
+
+      addLog('info', 'BARCODE_API', `Barkod guncelleniyor: ID ${productId} -> ${newBarcodeValue}`, { putUrl });
+
+      const putResponse = await fetch(putUrl, {
+
+        method: 'PUT',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+        body: JSON.stringify(updatedProduct),
+
+      });
+
+      if (!putResponse.ok) {
+
+        throw new Error(`HTTP error! status: ${putResponse.status}`);
+
+      }
+
+      addLog('success', 'BARCODE_API', `Barkod guncellendi: ID ${productId} -> ${newBarcodeValue}`);
+
+      const result = await putResponse.json().catch(() => ({ success: true }));
+
+      return result;
+
+    } catch (error) {
+
+      addLog('error', 'BARCODE_API', `Barkod guncellenemedi: ID ${productId}`, error);
 
       throw error;
 
@@ -989,6 +1093,94 @@ export default function App() {
 
 
 
+  const updateBarcodeBatch = async (updates: Array<{ productId: string; newBarcode: string }>) => {
+
+    if (updates.length === 0) {
+
+      return [];
+
+    }
+
+
+
+    const concurrency = 5;
+
+    const results: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+
+
+    setIsUpdatingStock(true);
+
+    setUpdateProgress({ current: 0, total: updates.length });
+
+
+
+    try {
+
+      for (let i = 0; i < updates.length; i += concurrency) {
+
+        const batch = updates.slice(i, i + concurrency);
+
+        const batchPromises = batch.map(async (update) => {
+
+          try {
+
+            await updateProductBarcode(update.productId, update.newBarcode);
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return { success: true, productId: update.productId };
+
+          } catch (error) {
+
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+
+            return {
+
+              success: false,
+
+              productId: update.productId,
+
+              error: error instanceof Error ? error.message : 'Unknown error'
+
+            };
+
+          }
+
+        });
+
+
+
+        const batchResults = await Promise.all(batchPromises);
+
+        results.push(...batchResults);
+
+
+
+        if (i + concurrency < updates.length) {
+
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        }
+
+      }
+
+
+
+      return results;
+
+    } finally {
+
+      setIsUpdatingStock(false);
+
+      setUpdateProgress({ current: 0, total: 0 });
+
+    }
+
+  };
+
+
+
   // API Functions
 
   const fetchProductGroups = async () => {
@@ -1071,6 +1263,8 @@ export default function App() {
 
     const costUpdates: Array<{ productId: string; newCost: number }> = [];
 
+    const barcodeUpdates: Array<{ productId: string; newBarcode: string }> = [];
+
 
 
     const updatedStockData = stockData.map(item => {
@@ -1082,6 +1276,8 @@ export default function App() {
       const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
 
       const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+
+      const pendingBarcode = barcodeValues[item.id] || null;
 
 
 
@@ -1108,6 +1304,8 @@ export default function App() {
       const previousCost = typeof item.cost === 'number' ? item.cost : undefined;
 
       const costChanged = pendingCost !== null && (previousCost === undefined || Math.abs(pendingCost - previousCost) > 0.0001);
+
+      const barcodeChanged = pendingBarcode !== null && pendingBarcode.trim() !== '' && pendingBarcode !== item.barcode;
 
 
 
@@ -1153,7 +1351,21 @@ export default function App() {
 
 
 
-      if (stockChanged || priceChanged || costChanged) {
+      if (barcodeChanged) {
+
+        barcodeUpdates.push({
+
+          productId: item.id,
+
+          newBarcode: pendingBarcode as string
+
+        });
+
+      }
+
+
+
+      if (stockChanged || priceChanged || costChanged || barcodeChanged) {
 
         let reason = '';
 
@@ -1263,7 +1475,9 @@ export default function App() {
 
         price: priceChanged ? (pendingPrice as number) : item.price,
 
-        cost: costChanged ? (pendingCost as number) : item.cost
+        cost: costChanged ? (pendingCost as number) : item.cost,
+
+        barcode: barcodeChanged ? (pendingBarcode as string) : item.barcode
 
       };
 
@@ -1271,9 +1485,9 @@ export default function App() {
 
 
 
-    if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0) {
+    if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0 && barcodeUpdates.length === 0) {
 
-      alert('Guncellenecek stok veya fiyat degisikligi bulunamadi!');
+      alert('Guncellenecek stok, fiyat, maliyet veya barkod degisikligi bulunamadi!');
 
       return;
 
@@ -1301,11 +1515,17 @@ export default function App() {
 
     }
 
+    if (barcodeUpdates.length > 0) {
+
+      summaryParts.push(`Barkod: ${barcodeUpdates.length} urun`);
+
+    }
+
 
 
     const confirmMessageLines: string[] = [
 
-      `Toplam ${stockUpdates.length + priceUpdates.length + costUpdates.length} guncelleme uygulanacak.`
+      `Toplam ${stockUpdates.length + priceUpdates.length + costUpdates.length + barcodeUpdates.length} guncelleme uygulanacak.`
 
     ];
 
@@ -1335,6 +1555,8 @@ export default function App() {
 
       let costResults: Array<{ success: boolean; productId: string; error?: string }> = [];
 
+      let barcodeResults: Array<{ success: boolean; productId: string; error?: string }> = [];
+
 
 
       if (stockUpdates.length > 0) {
@@ -1362,6 +1584,16 @@ export default function App() {
         addLog('info', 'COST_BATCH', `${costUpdates.length} urunun maliyeti guncelleniyor...`, costUpdates);
 
         costResults = await updateCostBatch(costUpdates);
+
+      }
+
+
+
+      if (barcodeUpdates.length > 0) {
+
+        addLog('info', 'BARCODE_BATCH', `${barcodeUpdates.length} urunun barkodu guncelleniyor...`, barcodeUpdates);
+
+        barcodeResults = await updateBarcodeBatch(barcodeUpdates);
 
       }
 
@@ -1426,6 +1658,10 @@ export default function App() {
       const failedCost = costResults.filter(result => !result.success);
 
       const successfulCost = costResults.filter(result => result.success);
+
+      const failedBarcode = barcodeResults.filter(result => !result.success);
+
+      const successfulBarcode = barcodeResults.filter(result => result.success);
 
 
 
@@ -1525,7 +1761,39 @@ export default function App() {
 
 
 
-      const totalFailures = failedStock.length + failedPrice.length + failedCost.length;
+      if (barcodeUpdates.length > 0) {
+
+        if (failedBarcode.length > 0) {
+
+          const failedProducts = failedBarcode.map(f => {
+
+            const product = stockData.find(p => p.id === f.productId);
+
+            return product?.name || f.productId;
+
+          }).join(', ');
+
+          addLog('warning', 'BARCODE_BATCH', `Kismi basari: ${successfulBarcode.length} basarili, ${failedBarcode.length} basarisiz`, {
+
+            successful: successfulBarcode.length,
+
+            failed: failedBarcode.length,
+
+            failedProducts
+
+          });
+
+        } else {
+
+          addLog('success', 'BARCODE_BATCH', `Tum barkod guncellemeleri basarili: ${successfulBarcode.length} urun`);
+
+        }
+
+      }
+
+
+
+      const totalFailures = failedStock.length + failedPrice.length + failedCost.length + failedBarcode.length;
 
       if (totalFailures > 0) {
 
@@ -1546,6 +1814,12 @@ export default function App() {
         if (costUpdates.length > 0) {
 
           failureLines.push(`Maliyet - basarili: ${successfulCost.length}, basarisiz: ${failedCost.length}`);
+
+        }
+
+        if (barcodeUpdates.length > 0) {
+
+          failureLines.push(`Barkod - basarili: ${successfulBarcode.length}, basarisiz: ${failedBarcode.length}`);
 
         }
 
@@ -1573,6 +1847,12 @@ export default function App() {
 
         }
 
+        if (barcodeUpdates.length > 0) {
+
+          successLines.push(`${successfulBarcode.length} barkod guncellemesi`);
+
+        }
+
         alert(`Tum guncellemeler basariyla tamamlandi!\n\n${successLines.join('\n')}`);
 
       }
@@ -1588,6 +1868,8 @@ export default function App() {
       setAddedValues({});
 
       setPriceValues({});
+
+      setBarcodeValues({});
 
       setCostValues({});
 
@@ -4585,7 +4867,23 @@ Lutfen tekrar deneyin.`);
 
                       <p className="text-xs text-muted-foreground">ID: {item.id}</p>
 
-                      <p className="text-xs text-muted-foreground break-all">Barkod: {item.barcode}</p>
+                      <div className="flex items-center gap-2 mt-1">
+
+                        <p className="text-xs text-muted-foreground">Barkod:</p>
+
+                        <Input
+
+                          value={barcodeValues[item.id] ?? item.barcode}
+
+                          onChange={(e) => handleBarcodeChange(item.id, e.target.value)}
+
+                          placeholder={item.barcode}
+
+                          className="text-xs h-6 px-2"
+
+                        />
+
+                      </div>
 
                     </div>
 
@@ -4837,7 +5135,23 @@ Lutfen tekrar deneyin.`);
 
                       <p className="text-sm text-muted-foreground">ID: {item.id}</p>
 
-                      <p className="text-sm text-muted-foreground mt-1 break-all">Barkod: {item.barcode}</p>
+                      <div className="flex items-center gap-2 mt-1">
+
+                        <p className="text-sm text-muted-foreground">Barkod:</p>
+
+                        <Input
+
+                          value={barcodeValues[item.id] ?? item.barcode}
+
+                          onChange={(e) => handleBarcodeChange(item.id, e.target.value)}
+
+                          placeholder={item.barcode}
+
+                          className="text-sm h-7 px-2 max-w-xs"
+
+                        />
+
+                      </div>
 
                     </div>
 
