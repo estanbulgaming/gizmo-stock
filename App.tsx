@@ -563,13 +563,14 @@ export default function App() {
 
     try {
 
-      const url = `${apiBase}/price/${productId}/${newPriceValue}`;
+      // Önce ürün bilgisini al
+      const getUrl = joinApi(`/v2.0/products/${productId}`);
 
-      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { url });
+      addLog('info', 'PRICE_API', `Ürün bilgisi alınıyor: ID ${productId}`, { getUrl });
 
-      const response = await fetch(url, {
+      const getResponse = await fetch(getUrl, {
 
-        method: 'POST',
+        method: 'GET',
 
         headers: {
 
@@ -581,15 +582,49 @@ export default function App() {
 
       });
 
-      if (!response.ok) {
+      if (!getResponse.ok) {
 
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${getResponse.status}`);
+
+      }
+
+      const productData = await getResponse.json();
+
+      // Fiyatı güncelle ve PUT ile gönder
+      const updatedProduct = {
+        ...productData,
+        price: newPriceValue
+      };
+
+      const putUrl = joinApi('/v2.0/products');
+
+      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { putUrl });
+
+      const putResponse = await fetch(putUrl, {
+
+        method: 'PUT',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+        body: JSON.stringify(updatedProduct),
+
+      });
+
+      if (!putResponse.ok) {
+
+        throw new Error(`HTTP error! status: ${putResponse.status}`);
 
       }
 
       addLog('success', 'PRICE_API', `Fiyat guncellendi: ID ${productId} -> ${newPriceValue}`);
 
-      const result = await response.json().catch(() => ({ success: true }));
+      const result = await putResponse.json().catch(() => ({ success: true }));
 
       return result;
 
@@ -609,13 +644,14 @@ export default function App() {
 
     try {
 
-      const url = `${apiBase}/cost/${productId}/${newCostValue}`;
+      // Önce ürün bilgisini al
+      const getUrl = joinApi(`/v2.0/products/${productId}`);
 
-      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { url });
+      addLog('info', 'COST_API', `Ürün bilgisi alınıyor: ID ${productId}`, { getUrl });
 
-      const response = await fetch(url, {
+      const getResponse = await fetch(getUrl, {
 
-        method: 'POST',
+        method: 'GET',
 
         headers: {
 
@@ -627,15 +663,49 @@ export default function App() {
 
       });
 
-      if (!response.ok) {
+      if (!getResponse.ok) {
 
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${getResponse.status}`);
+
+      }
+
+      const productData = await getResponse.json();
+
+      // Maliyeti güncelle ve PUT ile gönder
+      const updatedProduct = {
+        ...productData,
+        cost: newCostValue
+      };
+
+      const putUrl = joinApi('/v2.0/products');
+
+      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { putUrl });
+
+      const putResponse = await fetch(putUrl, {
+
+        method: 'PUT',
+
+        headers: {
+
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+
+          'Content-Type': 'application/json',
+
+        },
+
+        body: JSON.stringify(updatedProduct),
+
+      });
+
+      if (!putResponse.ok) {
+
+        throw new Error(`HTTP error! status: ${putResponse.status}`);
 
       }
 
       addLog('success', 'COST_API', `Maliyet guncellendi: ID ${productId} -> ${newCostValue}`);
 
-      const result = await response.json().catch(() => ({ success: true }));
+      const result = await putResponse.json().catch(() => ({ success: true }));
 
       return result;
 
@@ -4351,13 +4421,85 @@ Lutfen tekrar deneyin.`);
 
                       <p className="font-medium text-sm break-words">{item.name}</p>
 
+                      <p className="text-xs text-muted-foreground">ID: {item.id}</p>
+
                       <p className="text-xs text-muted-foreground break-all">Barkod: {item.barcode}</p>
 
                     </div>
 
                   </div>
 
-                  
+
+
+                  {/* Fiyat Bilgileri - İsim Altında */}
+
+                  <div className="grid grid-cols-4 gap-2">
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
+
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredPrice ?? ''}
+
+                        onChange={(value) => handlePriceChange(item.id, value)}
+
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
+                    <div className="text-center">
+
+                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
+
+                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredCost ?? ''}
+
+                        onChange={(value) => handleCostChange(item.id, value)}
+
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
+                  </div>
+
+
+
+                  {/* Stok Bilgileri - Fiyat Altında */}
 
                   <div className="grid grid-cols-2 gap-3">
 
@@ -4455,74 +4597,6 @@ Lutfen tekrar deneyin.`);
 
                   </div>
 
-
-
-                  {/* Fiyat Bilgileri - Stok Sistemi Görünümü */}
-
-                  <div className="grid grid-cols-4 gap-2">
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredPrice ?? ''}
-
-                        onChange={(value) => handlePriceChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredCost ?? ''}
-
-                        onChange={(value) => handleCostChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                  </div>
-
                 </div>
 
 
@@ -4531,9 +4605,9 @@ Lutfen tekrar deneyin.`);
 
                 <div className="hidden sm:block">
 
-                  <div className="flex items-center justify-between gap-4 mb-3">
+                  {/* Product Info Row */}
 
-                  <div className="flex items-center gap-3 flex-1">
+                  <div className="flex items-center gap-3 mb-3">
 
                     {/* Product Image - Desktop */}
 
@@ -4591,7 +4665,7 @@ Lutfen tekrar deneyin.`);
 
                     </div>
 
-                    
+
 
                     <div className="flex-1 min-w-0">
 
@@ -4599,11 +4673,81 @@ Lutfen tekrar deneyin.`);
 
                       <p className="break-words">{item.name}</p>
 
+                      <p className="text-sm text-muted-foreground">ID: {item.id}</p>
+
                       <p className="text-sm text-muted-foreground mt-1 break-all">Barkod: {item.barcode}</p>
 
                     </div>
 
                   </div>
+
+
+
+                  {/* Desktop Price Section - Below Name */}
+
+                  <div className="flex items-center gap-2 text-sm mb-3">
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Fiyat</p>
+
+                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
+
+                    </div>
+
+                    <div className="w-20">
+
+                      <p className="text-muted-foreground">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredPrice ?? ''}
+
+                        onChange={(value) => handlePriceChange(item.id, value)}
+
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                      />
+
+                    </div>
+
+                    <div className="text-center min-w-[60px]">
+
+                      <p className="text-muted-foreground">Maliyet</p>
+
+                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(cost)}</p>
+
+                    </div>
+
+                    <div className="w-20">
+
+                      <p className="text-muted-foreground">Yeni</p>
+
+                      <NumpadInput
+
+                        value={enteredCost ?? ''}
+
+                        onChange={(value) => handleCostChange(item.id, value)}
+
+                        placeholder="0.00"
+
+                        allowDecimal={true}
+
+                        step={0.01}
+
+                      />
+
+                    </div>
+
+                  </div>
+
+
+
+                  {/* Desktop Stock Section - Below Price */}
 
                   <div className="flex items-center gap-2 text-sm">
 
@@ -4690,72 +4834,6 @@ Lutfen tekrar deneyin.`);
                         {totalAfterCount}
 
                       </p>
-
-                    </div>
-
-                  </div>
-
-                  </div>
-
-
-
-                  {/* Desktop Price Section - Below Stock Info */}
-
-                  <div className="flex items-center gap-2 text-sm mb-3">
-
-                    <div className="text-center min-w-[60px]">
-
-                      <p className="text-muted-foreground">Fiyat</p>
-
-                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
-
-                    </div>
-
-                    <div className="w-20">
-
-                      <p className="text-muted-foreground">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredPrice ?? ''}
-
-                        onChange={(value) => handlePriceChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                      />
-
-                    </div>
-
-                    <div className="text-center min-w-[60px]">
-
-                      <p className="text-muted-foreground">Maliyet</p>
-
-                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(cost)}</p>
-
-                    </div>
-
-                    <div className="w-20">
-
-                      <p className="text-muted-foreground">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredCost ?? ''}
-
-                        onChange={(value) => handleCostChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                      />
 
                     </div>
 
