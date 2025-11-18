@@ -7,8 +7,6 @@ export interface ApiConfig {
   password: string;
   endpoint: string;
   groupsEndpoint: string;
-  priceEndpoint: string;
-  costEndpoint: string;
   paginationLimit: number;
   baseParams: string;
   includeDeleted: boolean;
@@ -23,8 +21,6 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   password: '123',
   endpoint: '/v2.0/products',
   groupsEndpoint: '/v2.0/productgroups',
-  priceEndpoint: '/price',
-  costEndpoint: '/cost',
   paginationLimit: 500,
   baseParams: 'EnableStock=true&Pagination.IsScroll=true',
   includeDeleted: false,

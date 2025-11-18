@@ -563,19 +563,18 @@ export default function App() {
 
     try {
 
-      const basePricePath = joinApi(apiConfig.priceEndpoint || '/price');
+      const url = joinApi('/v2.0/products');
 
-      const normalizedBase = basePricePath.endsWith('/') ? basePricePath.slice(0, -1) : basePricePath;
+      const requestBody = {
+        id: parseInt(productId),
+        price: newPriceValue
+      };
 
-      const formattedPrice = newPriceValue.toString();
-
-      const url = `${normalizedBase}/${productId}/${encodeURIComponent(formattedPrice)}`;
-
-      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${formattedPrice}`, { url });
+      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { url, body: requestBody });
 
       const response = await fetch(url, {
 
-        method: 'POST',
+        method: 'PUT',
 
         headers: {
 
@@ -585,6 +584,8 @@ export default function App() {
 
         },
 
+        body: JSON.stringify(requestBody),
+
       });
 
       if (!response.ok) {
@@ -593,7 +594,7 @@ export default function App() {
 
       }
 
-      addLog('success', 'PRICE_API', `Fiyat guncellendi: ID ${productId} -> ${formattedPrice}`);
+      addLog('success', 'PRICE_API', `Fiyat guncellendi: ID ${productId} -> ${newPriceValue}`);
 
       const result = await response.json().catch(() => ({ success: true }));
 
@@ -615,19 +616,18 @@ export default function App() {
 
     try {
 
-      const baseCostPath = joinApi(apiConfig.costEndpoint || '/cost');
+      const url = joinApi('/v2.0/products');
 
-      const normalizedBase = baseCostPath.endsWith('/') ? baseCostPath.slice(0, -1) : baseCostPath;
+      const requestBody = {
+        id: parseInt(productId),
+        cost: newCostValue
+      };
 
-      const formattedCost = newCostValue.toString();
-
-      const url = `${normalizedBase}/${productId}/${encodeURIComponent(formattedCost)}`;
-
-      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${formattedCost}`, { url });
+      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { url, body: requestBody });
 
       const response = await fetch(url, {
 
-        method: 'POST',
+        method: 'PUT',
 
         headers: {
 
@@ -637,6 +637,8 @@ export default function App() {
 
         },
 
+        body: JSON.stringify(requestBody),
+
       });
 
       if (!response.ok) {
@@ -645,7 +647,7 @@ export default function App() {
 
       }
 
-      addLog('success', 'COST_API', `Maliyet guncellendi: ID ${productId} -> ${formattedCost}`);
+      addLog('success', 'COST_API', `Maliyet guncellendi: ID ${productId} -> ${newCostValue}`);
 
       const result = await response.json().catch(() => ({ success: true }));
 
@@ -3105,26 +3107,6 @@ Lutfen tekrar deneyin.`);
 
 
 
-            <div>
-
-              <Label htmlFor="priceEndpoint">Fiyat Endpoint</Label>
-
-              <Input
-
-                id="priceEndpoint"
-
-                value={apiConfig.priceEndpoint}
-
-                onChange={(e) => setApiConfig(prev => ({ ...prev, priceEndpoint: e.target.value }))}
-
-                placeholder="/price"
-
-              />
-
-            </div>
-
-
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <div>
@@ -3579,17 +3561,17 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Fiyat Guncelleme (POST):</p>
+              <p className="text-sm font-medium mb-1">Fiyat/Maliyet Guncelleme (PUT):</p>
 
               <div className="bg-muted p-3 rounded font-mono text-sm break-all">
 
-                curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}{joinApi(apiConfig.priceEndpoint || '/price')}/[PRODUCT_ID]/[NEW_PRICE]"
+                curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": [PRODUCT_ID], "price": [NEW_PRICE], "cost": [NEW_COST]{`}`}'
 
               </div>
 
               <p className="text-xs text-muted-foreground mt-2">
 
-                Ornek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}{joinApi(apiConfig.priceEndpoint || '/price')}/48/199.90"
+                Ornek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "price": 199.90, "cost": 100{`}`}'
 
               </p>
 
