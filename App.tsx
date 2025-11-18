@@ -2993,6 +2993,15 @@ Lutfen tekrar deneyin.`);
 
     const [testError, setTestError] = useState<string | null>(null);
 
+    // API URL test states
+    const [apiUrlTests, setApiUrlTests] = useState<{[key: string]: boolean}>({});
+    const [editableUrls, setEditableUrls] = useState({
+      productsUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.endpoint}?${apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}"`,
+      categoriesUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.groupsEndpoint}"`,
+      stockUpdateUrl: `curl -u ${apiConfig.username}:${apiConfig.password} -X POST "http://${apiConfig.serverIP}/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]"`,
+      priceUpdateUrl: `curl -H "Content-Type: application/json" -u ${apiConfig.username}:${apiConfig.password} -X PUT "http://${apiConfig.serverIP}${joinApi('/v2.0/products')}" -d '{"id": [PRODUCT_ID], "price": [NEW_PRICE], "cost": [NEW_COST]}'`
+    });
+
 
 
     const filteredLogs = systemLogs.filter(log =>
@@ -3059,6 +3068,71 @@ Lutfen tekrar deneyin.`);
 
     };
 
+    const testApiUrl = async (urlKey: string, curlCommand: string): Promise<void> => {
+      setApiUrlTests(prev => ({ ...prev, [urlKey]: true }));
+      addLog('info', 'API_TEST', `Test başlatıldı`, { command: curlCommand });
+
+      try {
+        // Parse curl command to extract the actual URL and method
+        const urlMatch = curlCommand.match(/"(https?:\/\/[^"]+)"/);
+        const methodMatch = curlCommand.match(/-X\s+(POST|PUT|GET|DELETE)/);
+        const authMatch = curlCommand.match(/-u\s+([^:]+):([^\s"]+)/);
+
+        if (!urlMatch) {
+          throw new Error('URL bulunamadı');
+        }
+
+        const url = urlMatch[1];
+        const method = methodMatch ? methodMatch[1] : 'GET';
+        const username = authMatch ? authMatch[1] : apiConfig.username;
+        const password = authMatch ? authMatch[2] : apiConfig.password;
+
+        // Extract body if it's a POST/PUT request
+        const bodyMatch = curlCommand.match(/-d\s+'([^']+)'/);
+        const body = bodyMatch ? bodyMatch[1] : undefined;
+
+        const headers: HeadersInit = {
+          'Authorization': 'Basic ' + btoa(`${username}:${password}`)
+        };
+
+        if (body) {
+          headers['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body
+        });
+
+        const responseText = await response.text();
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          responseData = responseText;
+        }
+
+        if (!response.ok) {
+          addLog('error', 'API_TEST', `Test başarısız: HTTP ${response.status}`, {
+            status: response.status,
+            statusText: response.statusText,
+            response: responseData
+          });
+        } else {
+          addLog('success', 'API_TEST', `Test başarılı: HTTP ${response.status}`, {
+            status: response.status,
+            response: responseData
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+        addLog('error', 'API_TEST', `Test hatası: ${msg}`, { error: msg });
+      } finally {
+        setApiUrlTests(prev => ({ ...prev, [urlKey]: false }));
+      }
+    };
+
 
 
     const clearLogs = () => {
@@ -3087,11 +3161,11 @@ Lutfen tekrar deneyin.`);
 
       navigator.clipboard.writeText(logsText).then(() => {
 
-        addLog('success', 'SYSTEM', `${filteredLogs.length} log kopyaland?`);
+        addLog('success', 'SYSTEM', `${filteredLogs.length} log kopyalandı`);
 
       }).catch(() => {
 
-        addLog('error', 'SYSTEM', 'Loglar kopyalan?rken hata olu?tu');
+        addLog('error', 'SYSTEM', 'Loglar kopyalanırken hata oluştu');
 
       });
 
@@ -3167,7 +3241,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="username">Kullan?c? Ad?</Label>
+                <Label htmlFor="username">Kullanıcı Adı</Label>
 
                 <Input
 
@@ -3569,7 +3643,7 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-4">
 
-          <h4 className="mb-2">Olu?turulan API URL'leri:</h4>
+          <h4 className="mb-2">Oluşturulan API URL'leri:</h4>
 
           <div className="space-y-3">
 
@@ -3577,9 +3651,31 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-sm font-medium mb-1">Ürünler Listesi (GET):</p>
 
-              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+              <div className="flex gap-2">
 
-                curl -u {apiConfig.username}:{apiConfig.password} "http://{apiConfig.serverIP}{apiConfig.endpoint}?{apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&{apiConfig.baseParams}&Pagination.Limit={apiConfig.paginationLimit}"
+                <Input
+
+                  className="font-mono text-sm flex-1"
+
+                  value={editableUrls.productsUrl}
+
+                  onChange={(e) => setEditableUrls(prev => ({ ...prev, productsUrl: e.target.value }))}
+
+                />
+
+                <Button
+
+                  onClick={() => testApiUrl('productsUrl', editableUrls.productsUrl)}
+
+                  disabled={apiUrlTests.productsUrl}
+
+                  size="sm"
+
+                >
+
+                  {apiUrlTests.productsUrl ? 'Gönderiliyor...' : 'Send'}
+
+                </Button>
 
               </div>
 
@@ -3589,9 +3685,31 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-sm font-medium mb-1">Kategoriler Listesi (GET):</p>
 
-              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+              <div className="flex gap-2">
 
-                curl -u {apiConfig.username}:{apiConfig.password} "http://{apiConfig.serverIP}{apiConfig.groupsEndpoint}"
+                <Input
+
+                  className="font-mono text-sm flex-1"
+
+                  value={editableUrls.categoriesUrl}
+
+                  onChange={(e) => setEditableUrls(prev => ({ ...prev, categoriesUrl: e.target.value }))}
+
+                />
+
+                <Button
+
+                  onClick={() => testApiUrl('categoriesUrl', editableUrls.categoriesUrl)}
+
+                  disabled={apiUrlTests.categoriesUrl}
+
+                  size="sm"
+
+                >
+
+                  {apiUrlTests.categoriesUrl ? 'Gönderiliyor...' : 'Send'}
+
+                </Button>
 
               </div>
 
@@ -3601,9 +3719,31 @@ Lutfen tekrar deneyin.`);
 
               <p className="text-sm font-medium mb-1">Stok Güncelleme (POST):</p>
 
-              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+              <div className="flex gap-2">
 
-                curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]"
+                <Input
+
+                  className="font-mono text-sm flex-1"
+
+                  value={editableUrls.stockUpdateUrl}
+
+                  onChange={(e) => setEditableUrls(prev => ({ ...prev, stockUpdateUrl: e.target.value }))}
+
+                />
+
+                <Button
+
+                  onClick={() => testApiUrl('stockUpdateUrl', editableUrls.stockUpdateUrl)}
+
+                  disabled={apiUrlTests.stockUpdateUrl}
+
+                  size="sm"
+
+                >
+
+                  {apiUrlTests.stockUpdateUrl ? 'Gönderiliyor...' : 'Send'}
+
+                </Button>
 
               </div>
 
@@ -3617,17 +3757,39 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Fiyat/Maliyet Guncelleme (PUT):</p>
+              <p className="text-sm font-medium mb-1">Fiyat/Maliyet Güncelleme (PUT):</p>
 
-              <div className="bg-muted p-3 rounded font-mono text-sm break-all">
+              <div className="flex gap-2">
 
-                curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": [PRODUCT_ID], "price": [NEW_PRICE], "cost": [NEW_COST]{`}`}'
+                <Input
+
+                  className="font-mono text-sm flex-1"
+
+                  value={editableUrls.priceUpdateUrl}
+
+                  onChange={(e) => setEditableUrls(prev => ({ ...prev, priceUpdateUrl: e.target.value }))}
+
+                />
+
+                <Button
+
+                  onClick={() => testApiUrl('priceUpdateUrl', editableUrls.priceUpdateUrl)}
+
+                  disabled={apiUrlTests.priceUpdateUrl}
+
+                  size="sm"
+
+                >
+
+                  {apiUrlTests.priceUpdateUrl ? 'Gönderiliyor...' : 'Send'}
+
+                </Button>
 
               </div>
 
               <p className="text-xs text-muted-foreground mt-2">
 
-                Ornek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "price": 199.90, "cost": 100{`}`}'
+                Örnek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "price": 199.90, "cost": 100{`}`}'
 
               </p>
 
@@ -3669,9 +3831,9 @@ Lutfen tekrar deneyin.`);
 
                   <SelectItem value="info">Bilgi</SelectItem>
 
-                  <SelectItem value="success">Ba?ar?</SelectItem>
+                  <SelectItem value="success">Başarı</SelectItem>
 
-                  <SelectItem value="warning">Uyar?</SelectItem>
+                  <SelectItem value="warning">Uyarı</SelectItem>
 
                   <SelectItem value="error">Hata</SelectItem>
 
@@ -4685,19 +4847,19 @@ Lutfen tekrar deneyin.`);
 
                   {/* Desktop Price Section - Below Name */}
 
-                  <div className="flex items-center gap-2 text-sm mb-3">
+                  <div className="flex items-center gap-3 text-sm mb-3">
 
-                    <div className="text-center min-w-[60px]">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Fiyat</p>
+                      <p className="text-muted-foreground min-w-[50px]">Fiyat:</p>
 
-                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(currentPrice)}</p>
+                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{formatPrice(currentPrice)}</p>
 
                     </div>
 
-                    <div className="w-20">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Yeni</p>
+                      <p className="text-muted-foreground min-w-[40px]">Yeni:</p>
 
                       <NumpadInput
 
@@ -4711,21 +4873,23 @@ Lutfen tekrar deneyin.`);
 
                         step={0.01}
 
+                        className="w-20"
+
                       />
 
                     </div>
 
-                    <div className="text-center min-w-[60px]">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Maliyet</p>
+                      <p className="text-muted-foreground min-w-[50px]">Maliyet:</p>
 
-                      <p className="bg-muted px-2 py-1 rounded">{formatPrice(cost)}</p>
+                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{formatPrice(cost)}</p>
 
                     </div>
 
-                    <div className="w-20">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Yeni</p>
+                      <p className="text-muted-foreground min-w-[40px]">Yeni:</p>
 
                       <NumpadInput
 
@@ -4739,6 +4903,8 @@ Lutfen tekrar deneyin.`);
 
                         step={0.01}
 
+                        className="w-20"
+
                       />
 
                     </div>
@@ -4749,21 +4915,19 @@ Lutfen tekrar deneyin.`);
 
                   {/* Desktop Stock Section - Below Price */}
 
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-3 text-sm">
 
-                    <div className="text-center min-w-[60px]">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Mevcut</p>
+                      <p className="text-muted-foreground min-w-[50px]">Mevcut:</p>
 
-                      <p className="bg-muted px-2 py-1 rounded">{item.count}</p>
+                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{item.count}</p>
 
                     </div>
 
+                    <div className="flex items-center gap-2">
 
-
-                    <div className="w-20">
-
-                      <p className="text-muted-foreground">Sayılan</p>
+                      <p className="text-muted-foreground min-w-[50px]">Sayılan:</p>
 
                       <NumpadInput
 
@@ -4775,15 +4939,17 @@ Lutfen tekrar deneyin.`);
 
                         defaultValue={item.count}
 
+                        className="w-20"
+
                       />
 
                     </div>
 
-                    <div className="text-center min-w-[60px]">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Fark</p>
+                      <p className="text-muted-foreground min-w-[40px]">Fark:</p>
 
-                      <p className={`px-2 py-1 rounded ${
+                      <p className={`px-2 py-1 rounded min-w-[60px] text-center ${
 
                         countDiff !== null
 
@@ -4807,9 +4973,9 @@ Lutfen tekrar deneyin.`);
 
                     </div>
 
-                    <div className="w-20">
+                    <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground">Eklenen</p>
+                      <p className="text-muted-foreground min-w-[50px]">Eklenen:</p>
 
                       <NumpadInput
 
@@ -4819,17 +4985,17 @@ Lutfen tekrar deneyin.`);
 
                         placeholder="0"
 
+                        className="w-20"
+
                       />
 
                     </div>
 
+                    <div className="flex items-center gap-2">
 
+                      <p className="text-muted-foreground min-w-[50px]">Toplam:</p>
 
-                    <div className="text-center min-w-[60px]">
-
-                      <p className="text-muted-foreground">Toplam</p>
-
-                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded">
+                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded min-w-[60px] text-center">
 
                         {totalAfterCount}
 
