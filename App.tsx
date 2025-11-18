@@ -563,18 +563,13 @@ export default function App() {
 
     try {
 
-      const url = joinApi('/v2.0/products');
+      const url = `${apiBase}/price/${productId}/${newPriceValue}`;
 
-      const requestBody = {
-        id: parseInt(productId),
-        price: newPriceValue
-      };
-
-      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { url, body: requestBody });
+      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { url });
 
       const response = await fetch(url, {
 
-        method: 'PUT',
+        method: 'POST',
 
         headers: {
 
@@ -583,8 +578,6 @@ export default function App() {
           'Content-Type': 'application/json',
 
         },
-
-        body: JSON.stringify(requestBody),
 
       });
 
@@ -616,18 +609,13 @@ export default function App() {
 
     try {
 
-      const url = joinApi('/v2.0/products');
+      const url = `${apiBase}/cost/${productId}/${newCostValue}`;
 
-      const requestBody = {
-        id: parseInt(productId),
-        cost: newCostValue
-      };
-
-      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { url, body: requestBody });
+      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { url });
 
       const response = await fetch(url, {
 
-        method: 'PUT',
+        method: 'POST',
 
         headers: {
 
@@ -636,8 +624,6 @@ export default function App() {
           'Content-Type': 'application/json',
 
         },
-
-        body: JSON.stringify(requestBody),
 
       });
 
