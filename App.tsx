@@ -604,9 +604,13 @@ export default function App() {
 
       const productData = await getResponse.json();
 
-      // Sadece gerekli alanlarla PUT isteği gönder
+      // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
         id: productData.id,
+        productType: productData.productType,
+        guid: productData.guid,
+        productImages: productData.productImages,
+        productGroupId: productData.productGroupId,
         name: productData.name,
         price: newPriceValue,
         cost: productData.cost,
@@ -688,9 +692,13 @@ export default function App() {
 
       const productData = await getResponse.json();
 
-      // Sadece gerekli alanlarla PUT isteği gönder
+      // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
         id: productData.id,
+        productType: productData.productType,
+        guid: productData.guid,
+        productImages: productData.productImages,
+        productGroupId: productData.productGroupId,
         name: productData.name,
         price: productData.price,
         cost: newCostValue,
@@ -772,9 +780,13 @@ export default function App() {
 
       const productData = await getResponse.json();
 
-      // Sadece gerekli alanlarla PUT isteği gönder
+      // Tüm gerekli alanlarla PUT isteği gönder
       const updatedProduct = {
         id: productData.id,
+        productType: productData.productType,
+        guid: productData.guid,
+        productImages: productData.productImages,
+        productGroupId: productData.productGroupId,
         name: productData.name,
         price: productData.price,
         cost: productData.cost,
