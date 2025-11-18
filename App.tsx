@@ -619,7 +619,7 @@ export default function App() {
 
       const putUrl = joinApi('/v2.0/products');
 
-      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { putUrl });
+      addLog('info', 'PRICE_API', `Fiyat guncelleniyor: ID ${productId} -> ${newPriceValue}`, { putUrl, body: updatedProduct });
 
       const putResponse = await fetch(putUrl, {
 
@@ -707,7 +707,7 @@ export default function App() {
 
       const putUrl = joinApi('/v2.0/products');
 
-      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { putUrl });
+      addLog('info', 'COST_API', `Maliyet guncelleniyor: ID ${productId} -> ${newCostValue}`, { putUrl, body: updatedProduct });
 
       const putResponse = await fetch(putUrl, {
 
@@ -795,7 +795,7 @@ export default function App() {
 
       const putUrl = joinApi('/v2.0/products');
 
-      addLog('info', 'BARCODE_API', `Barkod guncelleniyor: ID ${productId} -> ${newBarcodeValue}`, { putUrl });
+      addLog('info', 'BARCODE_API', `Barkod guncelleniyor: ID ${productId} -> ${newBarcodeValue}`, { putUrl, body: updatedProduct });
 
       const putResponse = await fetch(putUrl, {
 
