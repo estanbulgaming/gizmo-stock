@@ -5,9 +5,22 @@
   if (/^https?:\/\//i.test(value)) return value;
   if (/^data:image\//i.test(value)) return value;
 
-  // Heuristic: long base64 string without path separators.
-  if (/^[A-Za-z0-9+/=]{100,}$/.test(value) && !value.includes('/') && !value.includes('\\')) {
-    return `data:image/jpeg;base64,${value}`;
+  // Heuristic: long base64 string (must not look like a file path)
+  // Base64 strings contain /, but file paths typically have :, ., or multiple consecutive /
+  const looksLikeBase64 = /^[A-Za-z0-9+/=]{100,}$/.test(value) &&
+                         !value.includes('://') &&
+                         !value.includes('\\') &&
+                         !/\.\w{2,4}$/.test(value); // not ending with file extension
+
+  if (looksLikeBase64) {
+    // Detect image format from base64 signature
+    if (value.startsWith('iVBORw0')) {
+      return `data:image/png;base64,${value}`;
+    } else if (value.startsWith('/9j/')) {
+      return `data:image/jpeg;base64,${value}`;
+    }
+    // Default fallback
+    return `data:image/png;base64,${value}`;
   }
 
   if (value.startsWith('/')) {

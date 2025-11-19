@@ -3302,7 +3302,13 @@ Lutfen tekrar deneyin.`);
 
     const [testLoading, setTestLoading] = useState(false);
 
-    const [testResult, setTestResult] = useState<unknown>(null);
+    const [testResult, setTestResult] = useState<{
+      requestUrl: string;
+      count: number;
+      sample: unknown[];
+      raw: unknown;
+      processedImageUrl?: string;
+    } | null>(null);
 
     const [testError, setTestError] = useState<string | null>(null);
 
@@ -3359,11 +3365,24 @@ Lutfen tekrar deneyin.`);
 
         const imageData = await response.json();
 
-        const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? []);
+        const dataArray = Array.isArray(imageData) ? imageData : (imageData?.result?.data ?? imageData?.result ?? []);
 
         addLog('success', 'IMAGE_TEST', `Bulunan görsel sayısı: ${dataArray.length}`);
 
-        setTestResult({ requestUrl: url, count: dataArray.length, sample: dataArray.slice(0, 5), raw: imageData });
+        // Process image URL using our utility function
+        let processedImageUrl: string | undefined;
+        if (dataArray.length > 0) {
+          const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, testProductId);
+          processedImageUrl = imageUrl;
+        }
+
+        setTestResult({
+          requestUrl: url,
+          count: dataArray.length,
+          sample: dataArray.slice(0, 5),
+          raw: imageData,
+          processedImageUrl
+        });
 
       } catch (err) {
 
@@ -3786,7 +3805,7 @@ Lutfen tekrar deneyin.`);
 
             {testResult && (
 
-              <div className="space-y-2">
+              <div className="space-y-4">
 
                 <div className="text-sm">
 
@@ -3795,6 +3814,29 @@ Lutfen tekrar deneyin.`);
                   <div>Bulunan görsel sayısı: <b>{testResult.count}</b></div>
 
                 </div>
+
+                {testResult.processedImageUrl && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold">Render Edilen Görsel:</div>
+                    <div className="border rounded p-4 bg-gray-50 flex justify-center">
+                      <img
+                        src={testResult.processedImageUrl}
+                        alt="Test Görseli"
+                        className="max-w-full h-auto max-h-64 object-contain"
+                        onError={(e) => {
+                          console.error('Görsel yüklenemedi:', testResult.processedImageUrl);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <div>Görsel URL Tipi: {testResult.processedImageUrl.startsWith('data:') ? 'Base64 Data URL' : 'HTTP URL'}</div>
+                      <div className="font-mono text-xs break-all mt-1">
+                        {testResult.processedImageUrl.substring(0, 100)}...
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <details>
 
