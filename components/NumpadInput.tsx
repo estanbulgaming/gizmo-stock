@@ -175,32 +175,54 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
       }
     }}>
       <PopoverTrigger asChild>
-        <div
-          onClick={() => {
+        <input
+          type="text"
+          inputMode={allowDecimal ? "decimal" : "numeric"}
+          value={displayValue || ''}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            // Allow only numbers, decimal point, and backspace
+            if (allowDecimal) {
+              if (!/^[0-9]*\.?[0-9]*$/.test(newValue) && newValue !== '') return;
+            } else {
+              if (!/^[0-9]*$/.test(newValue) && newValue !== '') return;
+            }
+
+            setDisplayValue(newValue);
+            setIsNewInput(false);
+
+            if (newValue === '') {
+              onChange('');
+            } else {
+              const numericValue = allowDecimal ? (parseFloat(newValue) || 0) : (parseInt(newValue) || 0);
+              onChange(numericValue);
+            }
+          }}
+          onFocus={() => {
             if (defaultValue !== undefined && (value === '' || value === 0)) {
               setDisplayValue(defaultValue.toString());
               onChange(defaultValue);
-              setIsNewInput(true); // Mark as new input when showing default value
-            } else if (value !== '' && value !== 0) {
-              setIsNewInput(true); // Mark as new input when there's an existing value
-            } else {
-              setIsNewInput(false); // Empty input, continue normally
-            }
-            setIsOpen(true);
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setIsOpen(true);
               setIsNewInput(true);
+            } else if (value !== '' && value !== 0) {
+              setIsNewInput(true);
+            } else {
+              setIsNewInput(false);
             }
           }}
+          onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => {
+            // Allow numpad and prevent default numpad behavior when popover is open
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              setIsOpen(false);
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              setIsOpen(false);
+            }
+          }}
+          placeholder={placeholder}
           className={`w-full px-2 py-1 border rounded text-center cursor-pointer bg-white ${className}`}
-        >
-          {displayValue || placeholder}
-        </div>
+        />
       </PopoverTrigger>
       <PopoverContent 
         className="w-56 sm:w-64 p-2 sm:p-3" 
