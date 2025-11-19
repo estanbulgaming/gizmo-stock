@@ -24,7 +24,7 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   paginationLimit: 500,
   baseParams: 'EnableStock=true&Pagination.IsScroll=true',
   includeDeleted: false,
-  showProductImages: false,
+  showProductImages: true,
 };
 
 type UseApiConfigReturn = [ApiConfig, Dispatch<SetStateAction<ApiConfig>>];
