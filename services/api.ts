@@ -161,9 +161,11 @@ export const fetchProductImageUrl = async (
   const payload = await response.json();
   const rawList = Array.isArray(payload)
     ? payload
-    : Array.isArray(payload?.result?.data)
-      ? payload.result.data
-      : [];
+    : Array.isArray(payload?.result)
+      ? payload.result
+      : Array.isArray(payload?.result?.data)
+        ? payload.result.data
+        : [];
   const records = rawList.filter(isRecord);
   const mainImage = records.find((img) => Boolean(img['isMain'])) ?? records[0];
 
