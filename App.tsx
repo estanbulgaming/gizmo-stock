@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 import { Checkbox } from './components/ui/checkbox';
 
-import { Download, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy } from 'lucide-react';
+import { Download, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -529,7 +529,7 @@ export default function App() {
 
     try {
 
-      const url = `${apiBase}/stock/${productId}/${newStockCount}`;
+      const url = joinApi(`/stock/${productId}/${newStockCount}`);
 
       addLog('info', 'STOCK_API', `Stok güncelleniyor: ID ${productId} → ${newStockCount}`, { url });
 
@@ -5205,6 +5205,214 @@ Lutfen tekrar deneyin.`);
                   </div>
 
                 </div>
+
+                {/* Action Buttons */}
+                {(() => {
+                  const hasChanges =
+                    (countedValues[item.id] !== undefined && countedValues[item.id] !== '') ||
+                    (addedValues[item.id] !== undefined && addedValues[item.id] !== 0 && addedValues[item.id] !== '') ||
+                    (priceValues[item.id] !== undefined && priceValues[item.id] !== '') ||
+                    (costValues[item.id] !== undefined && costValues[item.id] !== '') ||
+                    (barcodeValues[item.id] !== undefined && barcodeValues[item.id] !== item.barcode);
+
+                  if (!hasChanges) return null;
+
+                  return (
+                    <div className="mt-3 pt-3 border-t flex gap-2">
+                      <Button
+                        onClick={() => {
+                          // Reset all changes for this item
+                          setCountedValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
+                          setAddedValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
+                          setPriceValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
+                          setCostValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
+                          setBarcodeValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Undo2 className="h-4 w-4 mr-1" />
+                        Geri Al
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          // Apply changes for this single item
+                          const today = new Date().toLocaleDateString('tr-TR');
+
+                          const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
+                          const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+                          const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+                          const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+                          const pendingBarcode = barcodeValues[item.id] || null;
+
+                          let finalCount = item.count;
+                          if (countedValue !== null) {
+                            finalCount = countedValue + (addedValue as number);
+                          } else if (addedValue > 0) {
+                            finalCount = item.count + addedValue;
+                          }
+
+                          const stockChanged = finalCount !== item.count;
+                          const previousPrice = typeof item.price === 'number' ? item.price : undefined;
+                          const priceChanged = pendingPrice !== null && (previousPrice === undefined || Math.abs(pendingPrice - previousPrice) > 0.0001);
+                          const previousCost = typeof item.cost === 'number' ? item.cost : undefined;
+                          const costChanged = pendingCost !== null && (previousCost === undefined || Math.abs(pendingCost - previousCost) > 0.0001);
+                          const barcodeChanged = pendingBarcode !== null && pendingBarcode.trim() !== '' && pendingBarcode !== item.barcode;
+
+                          if (!stockChanged && !priceChanged && !costChanged && !barcodeChanged) {
+                            return;
+                          }
+
+                          try {
+                            // Perform updates using existing functions
+                            if (stockChanged) {
+                              await updateProductStock(item.id, finalCount);
+                            }
+
+                            if (priceChanged) {
+                              await updateProductPrice(item.id, pendingPrice as number);
+                            }
+
+                            if (costChanged) {
+                              await updateProductCost(item.id, pendingCost as number);
+                            }
+
+                            if (barcodeChanged) {
+                              await updateProductBarcode(item.id, pendingBarcode as string);
+                            }
+
+                            // Build change reason
+                            let reason = '';
+                            if (stockChanged && priceChanged && costChanged) {
+                              reason = 'Stok + Fiyat + Maliyet';
+                            } else if (stockChanged && priceChanged) {
+                              reason = 'Stok + Fiyat';
+                            } else if (stockChanged && costChanged) {
+                              reason = 'Stok + Maliyet';
+                            } else if (priceChanged && costChanged) {
+                              reason = 'Fiyat + Maliyet';
+                            } else if (stockChanged) {
+                              if (countedValue !== null && addedValue > 0) {
+                                reason = 'Sayim + Ekleme';
+                              } else if (countedValue !== null) {
+                                reason = 'Sayim';
+                              } else {
+                                reason = 'Ekleme';
+                              }
+                            } else if (priceChanged) {
+                              reason = 'Fiyat';
+                            } else if (costChanged) {
+                              reason = 'Maliyet';
+                            } else if (barcodeChanged) {
+                              reason = 'Barkod';
+                            }
+
+                            const changeValue = stockChanged ? finalCount - item.count : 0;
+                            const computedPriceChange = priceChanged
+                              ? (previousPrice !== undefined ? (pendingPrice as number) - previousPrice : pendingPrice as number)
+                              : undefined;
+                            const computedCostChange = costChanged
+                              ? (previousCost !== undefined ? (pendingCost as number) - previousCost : pendingCost as number)
+                              : undefined;
+
+                            // Add to stock changes history
+                            setStockChanges(prev => [...prev, {
+                              id: item.id,
+                              date: today,
+                              productName: item.name,
+                              change: changeValue,
+                              reason,
+                              previousCount: item.count,
+                              countedValue: countedValue ?? undefined,
+                              addedValue: addedValue as number,
+                              finalCount: finalCount,
+                              previousPrice,
+                              newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
+                              priceChange: computedPriceChange,
+                              previousCost,
+                              newCost: costChanged ? (pendingCost as number) : previousCost,
+                              costChange: computedCostChange,
+                              previousBarcode: barcodeChanged ? item.barcode : undefined,
+                              newBarcode: barcodeChanged ? (pendingBarcode as string) : undefined,
+                            }]);
+
+                            // Update local state
+                            setStockData(prev => prev.map(product => {
+                              if (product.id === item.id) {
+                                return {
+                                  ...product,
+                                  count: finalCount,
+                                  price: priceChanged ? (pendingPrice as number) : product.price,
+                                  cost: costChanged ? (pendingCost as number) : product.cost,
+                                  barcode: barcodeChanged ? (pendingBarcode as string) : product.barcode,
+                                };
+                              }
+                              return product;
+                            }));
+
+                            // Clear the values for this item
+                            setCountedValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+                            setAddedValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+                            setPriceValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+                            setCostValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+                            setBarcodeValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+
+                            addLog('success', 'APPLY', `Değişiklikler uygulandı: ${item.name}`);
+                          } catch (error) {
+                            addLog('error', 'APPLY', `Hata: ${item.name} güncellenemedi`, error);
+                            alert(`Guncelleme sirasinda hata olustu!\n\nÜrün: ${item.name}\nDetay: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}\n\nLutfen tekrar deneyin.`);
+                          }
+                        }}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Uygula
+                      </Button>
+                    </div>
+                  );
+                })()}
 
               </div>
 
