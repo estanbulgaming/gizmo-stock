@@ -5,9 +5,12 @@ Yerel stok yönetimi ve sayım uygulaması. React + TypeScript + Tailwind CSS il
 ## 🚀 Özellikler
 
 - **Stok Yönetimi**: Ürün stok sayılarını görüntüleme ve güncelleme
-- **Fiziki Sayım**: Gerçek stok sayımı ve fark hesaplama  
+- **Fiyat Yönetimi**: Ürün fiyatlarını toplu güncelleme
+- **Maliyet Yönetimi**: Ürün maliyet bilgilerini düzenleme
+- **Barkod Yönetimi**: Ürün barkodlarını güncelleme
+- **Fiziki Sayım**: Gerçek stok sayımı ve fark hesaplama
 - **Stok Ekleme**: Mevcut stoğa yeni ürün ekleme
-- **API Entegrasyonu**: REST API ile stok güncelleme
+- **API Entegrasyonu**: REST API ile stok, fiyat ve maliyet güncelleme
 - **Kategori Filtreleme**: Ürün gruplarına göre filtreleme
 - **Geçmiş Takibi**: Stok değişiklik geçmişi ve raporlama
 - **Responsive Design**: Mobil ve desktop uyumlu arayüz
@@ -87,12 +90,41 @@ Uygulama ayarlar sayfasından aşağıdaki API parametrelerini yapılandırabili
 # Ürün listesi
 GET http://[IP]/api/v2.0/products?IsDeleted=false&EnableStock=true&Pagination.Limit=500
 
-# Kategori listesi  
+# Kategori listesi
 GET http://[IP]/api/v2.0/productgroups
 
 # Stok güncelleme
 POST http://[IP]/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]
+
+# Fiyat/Maliyet/Barkod güncelleme
+# Önce ürün bilgisini al
+GET http://[IP]/api/v2.0/products/[PRODUCT_ID]
+
+# Sonra tüm alanlarla birlikte güncelle
+PUT http://[IP]/api/v2.0/products
+Content-Type: application/json
+{
+  "id": 10,
+  "productType": 0,
+  "guid": "...",
+  "productImages": [],
+  "productGroupId": 13,
+  "name": "Ürün Adı",
+  "price": 44.00,
+  "cost": 19.99,
+  "barcode": "1234567890"
+}
 ```
+
+**Önemli:** Fiyat, maliyet veya barkod güncellerken API'nin döndüğü response formatına dikkat edin:
+```json
+{
+  "result": { "id": 10, "name": "...", "price": 40, ... },
+  "httpStatusCode": 200,
+  "isError": false
+}
+```
+Ürün verisi `result` objesi içinde gelir.
 
 ## 🔧 Geliştirme
 
@@ -153,9 +185,11 @@ main.tsx              # Uygulama giriş noktası
 1. **Ürünleri Yükle**: API'den ürün listesini çekin
 2. **Stok Sayımı**: Fiziki sayım değerlerini girin
 3. **Stok Ekleme**: Yeni ürün eklemek için "Eklenen" alanını kullanın
-4. **Fark Kontrolü**: Sistem otomatik fark hesaplar
-5. **Değişiklikleri Uygula**: API ile stok güncellemelerini gönderin
-6. **Geçmiş İnceleme**: Sayım geçmişini ve raporları görüntüleyin
+4. **Fiyat/Maliyet Güncelleme**: "Fiyat - Yeni" ve "Maliyet - Yeni" alanlarına değer girin
+5. **Barkod Güncelleme**: Ürün barkodlarını düzenleyin
+6. **Fark Kontrolü**: Sistem otomatik fark hesaplar
+7. **Değişiklikleri Uygula**: API ile stok, fiyat ve maliyet güncellemelerini gönderin
+8. **Geçmiş İnceleme**: Sayım geçmişini ve raporları görüntüleyin
 
 ## 🔒 Güvenlik
 
