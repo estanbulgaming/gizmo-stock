@@ -38,5 +38,12 @@
   "empty.hint": "Use Fetch Products to view your stock list",
 
   "settings.language": "Language",
-  "settings.language.description": "Select the application language"
+  "settings.language.description": "Select the application language",
+
+  "login.title": "Login",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.serverIP": "Server IP Address",
+  "login.submit": "Login",
+  "login.error.required": "Please fill in all fields"
 }

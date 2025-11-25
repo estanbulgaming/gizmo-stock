@@ -38,5 +38,12 @@
   "empty.hint": "Χρησιμοποιήστε τη Λήψη Προϊόντων για να δείτε τη λίστα αποθέματος",
 
   "settings.language": "Γλώσσα",
-  "settings.language.description": "Επιλέξτε τη γλώσσα της εφαρμογής"
+  "settings.language.description": "Επιλέξτε τη γλώσσα της εφαρμογής",
+
+  "login.title": "Σύνδεση",
+  "login.username": "Όνομα χρήστη",
+  "login.password": "Κωδικός",
+  "login.serverIP": "Διεύθυνση IP διακομιστή",
+  "login.submit": "Είσοδος",
+  "login.error.required": "Παρακαλώ συμπληρώστε όλα τα πεδία"
 }

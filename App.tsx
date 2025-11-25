@@ -4193,6 +4193,60 @@ Lutfen tekrar deneyin.`);
 
 
 
+  // Check if login is required
+  const isLoggedIn = apiConfig.serverIP && apiConfig.username && apiConfig.password;
+
+  // Login screen
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="login-username" className="text-gray-700">{t('login.username')}</Label>
+              <Input
+                id="login-username"
+                type="text"
+                value={apiConfig.username}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, username: e.target.value }))}
+                className="mt-1"
+                placeholder={t('login.username')}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="login-password" className="text-gray-700">{t('login.password')}</Label>
+              <Input
+                id="login-password"
+                type="password"
+                value={apiConfig.password}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, password: e.target.value }))}
+                className="mt-1"
+                placeholder={t('login.password')}
+              />
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label htmlFor="login-serverip" className="text-gray-700">{t('login.serverIP')}</Label>
+              <Input
+                id="login-serverip"
+                type="text"
+                value={apiConfig.serverIP}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, serverIP: e.target.value }))}
+                className="mt-1"
+                placeholder="192.168.1.5"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
     <div className="min-h-screen bg-background p-3 sm:p-6">

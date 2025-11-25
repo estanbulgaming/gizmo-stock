@@ -38,5 +38,12 @@
   "empty.hint": "Используйте «Загрузить товары» для просмотра списка запасов",
 
   "settings.language": "Язык",
-  "settings.language.description": "Выберите язык приложения"
+  "settings.language.description": "Выберите язык приложения",
+
+  "login.title": "Вход",
+  "login.username": "Имя пользователя",
+  "login.password": "Пароль",
+  "login.serverIP": "IP-адрес сервера",
+  "login.submit": "Войти",
+  "login.error.required": "Пожалуйста, заполните все поля"
 }
