@@ -1,0 +1,42 @@
+{
+  "app.title": "Система управления запасами",
+  "app.subtitle": "Управляйте инвентарём локально",
+
+  "nav.stock": "Управление запасами",
+  "nav.history": "История подсчёта",
+  "nav.settings": "Настройки",
+
+  "controls.title": "Действия",
+  "controls.fetch": "Загрузить товары",
+  "controls.apply": "Применить изменения",
+  "controls.apply.short": "Применить",
+  "controls.updating": "Обновление...",
+  "controls.loading": "Загрузка...",
+
+  "progress.updating": "Обновление запасов...",
+  "progress.fetching": "Загрузка запасов...",
+
+  "list.title": "Товары на складе",
+  "list.search.placeholder": "Поиск по названию или штрих-коду...",
+
+  "danger.title": "Опасные действия",
+
+  "reset.none": "Товары, соответствующие фильтру, не найдены.",
+  "reset.done": "{count} товаров, соответствующих фильтру, посчитаны как 0.\n\nВы можете обновить запасы до 0 с помощью \"Применить изменения\".",
+
+  "filter.showAll": "Показать все",
+  "filter.category": "Категория",
+
+  "item.product": "Товар",
+  "item.barcode": "Штрих-код",
+  "item.current": "Текущий",
+  "item.counted": "Подсчитано",
+  "item.added": "Добавлено",
+  "item.diff": "Разница",
+  "item.total": "Итого",
+
+  "empty.hint": "Используйте «Загрузить товары» для просмотра списка запасов",
+
+  "settings.language": "Язык",
+  "settings.language.description": "Выберите язык приложения"
+}

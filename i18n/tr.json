@@ -35,5 +35,8 @@
   "item.diff": "Fark",
   "item.total": "Toplam",
 
-  "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz"
+  "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz",
+
+  "settings.language": "Dil",
+  "settings.language.description": "Uygulama dilini seçin"
 }

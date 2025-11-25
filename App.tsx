@@ -23,7 +23,7 @@ import { Progress } from './components/ui/progress';
 
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 
-import { t } from './i18n';
+import { t, getLang, setLang, availableLanguages, languageNames, Lang } from './i18n';
 
 import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
 
@@ -70,6 +70,9 @@ export default function App() {
   // API Configuration states
 
   const [apiConfig, setApiConfig] = useApiConfig(DEFAULT_API_CONFIG);
+
+  // Language state - triggers re-render when language changes
+  const [currentLanguage, setCurrentLanguage] = useState<Lang>(getLang());
 
 
   // Use relative base path so dev (Vite) and prod (Nginx) proxies handle CORS
@@ -3431,6 +3434,30 @@ Lutfen tekrar deneyin.`);
         </div>
 
 
+
+        {/* Language Selection */}
+        <Card className="p-6">
+          <h3 className="mb-4">{t('settings.language')}</h3>
+          <p className="text-muted-foreground text-sm mb-4">{t('settings.language.description')}</p>
+          <Select
+            value={currentLanguage}
+            onValueChange={(value: Lang) => {
+              setLang(value);
+              setCurrentLanguage(value);
+            }}
+          >
+            <SelectTrigger className="w-full md:w-64">
+              <SelectValue placeholder={t('settings.language')} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableLanguages.map((lang) => (
+                <SelectItem key={lang} value={lang}>
+                  {languageNames[lang]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
 
         {/* API Configuration */}
 

@@ -1,0 +1,42 @@
+{
+  "app.title": "Σύστημα Διαχείρισης Αποθέματος",
+  "app.subtitle": "Διαχειριστείτε το απόθεμά σας τοπικά",
+
+  "nav.stock": "Διαχείριση Αποθέματος",
+  "nav.history": "Ιστορικό Καταμέτρησης",
+  "nav.settings": "Ρυθμίσεις",
+
+  "controls.title": "Ενέργειες",
+  "controls.fetch": "Λήψη Προϊόντων",
+  "controls.apply": "Εφαρμογή Αλλαγών",
+  "controls.apply.short": "Εφαρμογή",
+  "controls.updating": "Ενημέρωση...",
+  "controls.loading": "Φόρτωση...",
+
+  "progress.updating": "Ενημέρωση αποθέματος...",
+  "progress.fetching": "Φόρτωση αποθέματος...",
+
+  "list.title": "Προϊόντα Αποθέματος",
+  "list.search.placeholder": "Αναζήτηση με όνομα προϊόντος ή barcode...",
+
+  "danger.title": "Επικίνδυνες Ενέργειες",
+
+  "reset.none": "Δεν βρέθηκαν προϊόντα που ταιριάζουν με το φίλτρο.",
+  "reset.done": "{count} προϊόντα που ταιριάζουν με το φίλτρο μετρήθηκαν ως 0.\n\nΜπορείτε να ενημερώσετε το απόθεμα σε 0 με \"Εφαρμογή Αλλαγών\".",
+
+  "filter.showAll": "Εμφάνιση Όλων",
+  "filter.category": "Κατηγορία",
+
+  "item.product": "Προϊόν",
+  "item.barcode": "Barcode",
+  "item.current": "Τρέχον",
+  "item.counted": "Μετρημένο",
+  "item.added": "Προστέθηκε",
+  "item.diff": "Διαφορά",
+  "item.total": "Σύνολο",
+
+  "empty.hint": "Χρησιμοποιήστε τη Λήψη Προϊόντων για να δείτε τη λίστα αποθέματος",
+
+  "settings.language": "Γλώσσα",
+  "settings.language.description": "Επιλέξτε τη γλώσσα της εφαρμογής"
+}
