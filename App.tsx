@@ -49,9 +49,9 @@ export default function App() {
 
   const [costValues, setCostValues] = useState<{ [key: string]: number | '' }>({});
 
-  const [previousCostValues, setPreviousCostValues] = useState<{ [key: string]: number | '' }>({});
+  const [previousCostValues, _setPreviousCostValues] = useState<{ [key: string]: number | '' }>({});
 
-  const [nextCostValues, setNextCostValues] = useState<{ [key: string]: number | '' }>({});
+  const [nextCostValues, _setNextCostValues] = useState<{ [key: string]: number | '' }>({});
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
@@ -295,46 +295,6 @@ export default function App() {
   };
 
 
-
-  const handlePriceInputChange = (id: string, inputValue: string) => {
-
-    const normalized = inputValue.replace(',', '.').trim();
-
-    if (normalized === '') {
-
-      setPriceValues(prev => ({
-
-        ...prev,
-
-        [id]: ''
-
-      }));
-
-      return;
-
-    }
-
-
-
-    const parsed = Number(normalized);
-
-    if (!Number.isFinite(parsed)) {
-
-      return;
-
-    }
-
-
-
-    setPriceValues(prev => ({
-
-      ...prev,
-
-      [id]: parsed
-
-    }));
-
-  };
 
   const handlePriceChange = (id: string, value: number | '') => {
 
@@ -4677,7 +4637,7 @@ Lutfen tekrar deneyin.`);
 
               const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
 
-              const priceDiff = enteredPrice !== null && currentPrice !== null
+              const _priceDiff = enteredPrice !== null && currentPrice !== null
 
                 ? enteredPrice - currentPrice
 
@@ -4697,11 +4657,11 @@ Lutfen tekrar deneyin.`);
 
               const enteredPreviousCost = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] : null;
 
-              const previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
+              const _previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
 
               const enteredNextCost = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] : null;
 
-              const nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
+              const _nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
 
               return (
 
