@@ -1953,9 +1953,9 @@ export default function App() {
       filteredData = stockData.filter(item => item.productGroupId === activeProductGroupFilter);
     }
     if (!searchQuery.trim()) return filteredData;
-    const query = searchQuery.toLowerCase().trim();
+    const query = searchQuery.toLocaleLowerCase('tr').trim();
     return filteredData.filter(item =>
-      item.name.toLowerCase().includes(query) || item.barcode.toLowerCase().includes(query)
+      item.name.toLocaleLowerCase('tr').includes(query) || item.barcode.toLocaleLowerCase('tr').includes(query)
     );
   }, [stockData, activeProductGroupFilter, searchQuery]);
 
