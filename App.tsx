@@ -4199,14 +4199,38 @@ Lutfen tekrar deneyin.`);
 
   // Login screen
   if (!isLoggedIn) {
+    const canSubmit = apiConfig.serverIP.trim() && apiConfig.username.trim() && apiConfig.password.trim();
+
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-sm space-y-6">
+          {/* Language selector */}
+          <div className="flex justify-end">
+            <Select
+              value={currentLanguage}
+              onValueChange={(value: Lang) => {
+                setLang(value);
+                setCurrentLanguage(value);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableLanguages.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {languageNames[lang]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
           </div>
 
-          <div className="space-y-4">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
             <div>
               <Label htmlFor="login-username" className="text-gray-700">{t('login.username')}</Label>
               <Input
@@ -4242,7 +4266,19 @@ Lutfen tekrar deneyin.`);
                 placeholder="192.168.1.5"
               />
             </div>
-          </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-6"
+              disabled={!canSubmit}
+            >
+              {t('login.submit')}
+            </Button>
+
+            {!canSubmit && (
+              <p className="text-sm text-red-500 text-center">{t('login.error.required')}</p>
+            )}
+          </form>
         </div>
       </div>
     );
