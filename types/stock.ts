@@ -33,16 +33,6 @@ export interface StockChange {
   newBarcode?: string;
 }
 
-export interface DailyReport {
-  date: string;
-  totalProducts: number;
-  totalCounted: number;
-  totalAdded: number;
-  totalChanged: number;
-  totalPriceChanges: number;
-  changes: StockChange[];
-}
-
 export interface ProductGroup {
   id: number;
   name: string;
