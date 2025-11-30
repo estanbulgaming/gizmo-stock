@@ -26,6 +26,7 @@ import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { t, getLang, setLang, availableLanguages, languageNames, Lang } from './i18n';
 
 import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
+import { useStockHistory } from './hooks/useStockHistory';
 
 import { formatPrice } from './utils/product';
 import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
@@ -55,7 +56,7 @@ export default function App() {
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
-  const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
+  const { stockChanges, addChanges: addStockChanges, clearHistory: clearStockHistory } = useStockHistory();
 
   const [currentPage, setCurrentPage] = useState<'stock' | 'history' | 'settings'>('stock');
 
@@ -1855,7 +1856,7 @@ export default function App() {
 
       setStockData(updatedStockData);
 
-      setStockChanges(prev => [...prev, ...newChanges]);
+      addStockChanges(newChanges);
 
       setCountedValues({});
 
@@ -5378,7 +5379,7 @@ Lutfen tekrar deneyin.`);
                               : undefined;
 
                             // Add to stock changes history
-                            setStockChanges(prev => [...prev, {
+                            addStockChanges([{
                               id: item.id,
                               date: today,
                               productName: item.name,
