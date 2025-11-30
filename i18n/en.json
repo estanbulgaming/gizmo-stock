@@ -3,7 +3,9 @@
   "app.subtitle": "Manage your inventory locally",
 
   "nav.stock": "Stock Management",
+  "nav.stockShort": "Stock",
   "nav.history": "Count History",
+  "nav.historyShort": "History",
   "nav.settings": "Settings",
 
   "controls.title": "Actions",
@@ -12,6 +14,7 @@
   "controls.apply.short": "Apply",
   "controls.updating": "Updating...",
   "controls.loading": "Loading...",
+  "controls.undo": "Undo",
 
   "progress.updating": "Updating stock...",
   "progress.fetching": "Loading stock...",
@@ -20,6 +23,10 @@
   "list.search.placeholder": "Search by product name or barcode...",
 
   "danger.title": "Dangerous Actions",
+  "danger.resetAll": "Reset All Stock",
+  "danger.resetAll.description": "This action cannot be undone and will reset all product stock quantities.",
+  "danger.resetAll.warning": "⚠️ WARNING: This action cannot be undone!\n\nYou are about to mark all products' count values as 0.\n\nDo you want to continue?",
+  "danger.resetAll.finalWarning": "🛑 FINAL WARNING: This action CANNOT BE UNDONE!\n\nA total of {count} products will have their count value set to 0.\n\nAre you sure?",
 
   "reset.none": "No products matching the filter.",
   "reset.done": "{count} products matching the filter have been counted as 0.\n\nYou can update stock to 0 with \"Apply Changes\".",
@@ -34,16 +41,83 @@
   "item.added": "Added",
   "item.diff": "Diff",
   "item.total": "Total",
+  "item.price": "Price",
+  "item.cost": "Cost",
+  "item.oldPrice": "Old Price",
+  "item.newPrice": "New Price",
+  "item.priceDiff": "Price Diff",
 
   "empty.hint": "Use Fetch Products to view your stock list",
 
+  "settings.title": "System Settings",
+  "settings.description": "Configure API connection settings and system parameters",
   "settings.language": "Language",
   "settings.language.description": "Select the application language",
+
+  "settings.api.title": "API Connection Settings",
+  "settings.api.serverIP": "Server IP Address",
+  "settings.api.endpoint": "API Endpoint",
+  "settings.api.username": "Username",
+  "settings.api.password": "Password",
+  "settings.api.paginationLimit": "Products Per Page",
+  "settings.api.baseParams": "Base Parameters",
+  "settings.api.includeDeleted": "Deleted Products",
+  "settings.api.includeDeleted.label": "Include deleted products",
+  "settings.api.showImages": "Show Product Images",
+
+  "settings.categories.title": "Product Categories",
+  "settings.categories.load": "Load Categories",
+  "settings.categories.selected": "Selected Categories",
+  "settings.categories.notFound": "No categories found",
+  "settings.categories.hint": "Click the button above to load categories",
+  "settings.categories.filter": "Categories to Display on Stock Page",
+
+  "settings.urls.title": "Generated API URLs",
+  "settings.urls.products": "Products List (GET)",
+  "settings.urls.categories": "Categories List (GET)",
+  "settings.urls.stockUpdate": "Stock Update (POST)",
+  "settings.urls.priceUpdate": "Price/Cost Update (PUT)",
+  "settings.urls.send": "Send",
+  "settings.urls.sending": "Sending...",
+
+  "settings.logs.title": "System Logs",
+  "settings.logs.clear": "Clear Logs",
+  "settings.logs.clear.confirm": "Are you sure you want to clear all logs?",
+  "settings.logs.copy": "Copy",
+
+  "history.title": "Stock Count History",
+  "history.export": "Download CSV",
+  "history.noData": "No count records yet",
+  "history.details": "Change Details",
+  "history.priceChange": "Price Change",
+  "history.current": "Current",
+  "history.final": "Final",
+  "history.countValue": "Count",
+
+  "csv.productName": "Product Name",
+  "csv.current": "Current",
+  "csv.counted": "Counted",
+  "csv.added": "Added",
+  "csv.diffCounted": "Diff (Count)",
+  "csv.total": "Total",
+  "csv.oldPrice": "Old Price",
+  "csv.newPrice": "New Price",
+  "csv.priceDiff": "Price Diff",
+  "csv.actionType": "Action Type",
+  "csv.date": "Date",
 
   "login.title": "Login",
   "login.username": "Username",
   "login.password": "Password",
   "login.serverIP": "Server IP Address",
   "login.submit": "Login",
-  "login.error.required": "Please fill in all fields"
+  "login.error.required": "Please fill in all fields",
+
+  "errors.noChanges": "No stock, price, cost, or barcode changes to update!",
+  "errors.updateFailed": "Critical error during update!\n\nDetail: {error}\n\nPlease try again.",
+  "errors.partialFail": "Update completed but some records failed.",
+
+  "success.updateComplete": "All updates completed successfully!",
+
+  "confirm.applyChanges": "Are you sure you want to apply the following changes?\n\n{details}\n\nThis action cannot be undone."
 }
