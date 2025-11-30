@@ -30,7 +30,7 @@ import { useCountingSession, downloadSessionReport } from './hooks/useCountingSe
 import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
-import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
+import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
 import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost } from './services/api';
 
 
@@ -58,7 +58,7 @@ export default function App() {
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
   const { toasts, showToast, dismissToast } = useToast();
-  const { session, isSessionActive, startSession, endSession, addChange, clearSession } = useCountingSession();
+  const { session, isSessionActive, startSession, endSession, addChange } = useCountingSession();
 
   const [currentPage, setCurrentPage] = useState<'stock' | 'counting' | 'settings'>('stock');
 
@@ -1805,7 +1805,26 @@ export default function App() {
 
       setStockData(updatedStockData);
 
-      addStockChanges(newChanges);
+      // Add changes to counting session if active
+      if (isSessionActive) {
+        for (const change of newChanges) {
+          const item = stockData.find(p => p.id === change.id);
+          addChange({
+            productId: change.id,
+            productName: change.productName,
+            barcode: item?.barcode,
+            previousCount: change.previousCount,
+            countedValue: change.countedValue,
+            addedValue: change.addedValue,
+            finalCount: change.finalCount,
+            previousPrice: change.previousPrice,
+            newPrice: change.newPrice,
+            previousCost: change.previousCost,
+            newCost: change.newCost,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
 
       setCountedValues({});
 
@@ -1995,219 +2014,10 @@ export default function App() {
 
 
 
-  // Get dates that have stock changes
 
-  const getDatesWithChanges = (): Date[] => {
 
-    const uniqueDates = [...new Set(stockChanges.map(change => change.date))];
 
-    return uniqueDates.map(dateStr => {
 
-      const [day, month, year] = dateStr.split('.');
-
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-
-    });
-
-  };
-
-
-
-  // Get daily report for a specific date
-
-  const getDailyReport = (date: Date): DailyReport => {
-
-
-
-    const dateStr = date.toLocaleDateString('tr-TR');
-
-
-
-    const dayChanges = stockChanges.filter(change => change.date === dateStr);
-
-
-
-    
-
-
-
-    const totalCounted = dayChanges.filter(c => c.reason.includes('Sayim')).length;
-
-
-
-    const totalAdded = dayChanges.filter(c => c.reason.includes('Ekleme')).length;
-
-
-
-    const totalChanged = dayChanges.reduce((sum, c) => sum + Math.abs(c.change), 0);
-
-
-
-    const totalPriceChanges = dayChanges.filter(change => {
-
-
-
-      const previous = typeof change.previousPrice === 'number' ? change.previousPrice : undefined;
-
-
-
-      const next = typeof change.newPrice === 'number' ? change.newPrice : undefined;
-
-
-
-      if (previous === undefined && next === undefined) return false;
-
-
-
-      if (previous === undefined || next === undefined) return true;
-
-
-
-      return Math.abs(next - previous) > 0.0001;
-
-
-
-    }).length;
-
-
-
-    
-
-
-
-    return {
-
-
-
-      date: dateStr,
-
-
-
-      totalProducts: dayChanges.length,
-
-
-
-      totalCounted,
-
-
-
-      totalAdded,
-
-
-
-      totalChanged,
-
-
-
-      totalPriceChanges,
-
-
-
-      changes: dayChanges
-
-
-
-    };
-
-
-
-  };
-
-
-
-
-
-
-
-  // Get unique dates sorted by date
-
-  const getUniqueDatesSorted = (): string[] => {
-
-    const uniqueDates = [...new Set(stockChanges.map(change => change.date))];
-
-    return uniqueDates.sort((a, b) => {
-
-      const [dayA, monthA, yearA] = a.split('.').map(Number);
-
-      const [dayB, monthB, yearB] = b.split('.').map(Number);
-
-      const dateA = new Date(yearA, monthA - 1, dayA);
-
-      const dateB = new Date(yearB, monthB - 1, dayB);
-
-      return dateB.getTime() - dateA.getTime(); // Most recent first
-
-    });
-
-  };
-
-
-
-  // Navigation functions
-
-  const navigateToDate = (direction: 'prev' | 'next') => {
-
-    const sortedDates = getUniqueDatesSorted();
-
-    if (sortedDates.length === 0) return;
-
-
-
-    let newIndex = currentDateIndex;
-
-    if (direction === 'prev' && currentDateIndex > 0) {
-
-      newIndex = currentDateIndex - 1;
-
-    } else if (direction === 'next' && currentDateIndex < sortedDates.length - 1) {
-
-      newIndex = currentDateIndex + 1;
-
-    }
-
-
-
-    setCurrentDateIndex(newIndex);
-
-    const [day, month, year] = sortedDates[newIndex].split('.').map(Number);
-
-    setSelectedDate(new Date(year, month - 1, day));
-
-  };
-
-
-
-  // Handle keyboard navigation
-
-  const handleKeyPress = (e: KeyboardEvent) => {
-
-    if (currentPage === 'history' && selectedDate) {
-
-      if (e.key === 'ArrowLeft') {
-
-        navigateToDate('prev');
-
-      } else if (e.key === 'ArrowRight') {
-
-        navigateToDate('next');
-
-      }
-
-    }
-
-  };
-
-
-
-  // Add keyboard event listener
-
-  React.useEffect(() => {
-
-    document.addEventListener('keydown', handleKeyPress);
-
-    return () => document.removeEventListener('keydown', handleKeyPress);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, selectedDate, currentDateIndex]);
 
 
 
@@ -2324,224 +2134,6 @@ export default function App() {
     return () => document.removeEventListener('paste', handlePaste);
 
   }, [currentPage]);
-
-
-
-  // Download CSV report for a specific date
-
-  const downloadCSVReport = (report: DailyReport) => {
-
-
-
-    const headers = [t('csv.productName'), t('csv.current'), t('csv.counted'), t('csv.added'), t('csv.diffCounted'), t('csv.total'), t('csv.oldPrice'), t('csv.newPrice'), t('csv.priceDiff'), t('csv.actionType'), t('csv.date')];
-
-
-
-    const rows = report.changes.map(change => {
-
-
-
-      const countDifference = change.countedValue !== undefined && change.countedValue !== null
-
-
-
-        ? change.countedValue - change.previousCount
-
-
-
-        : 0;
-
-
-
-      const totalAmount = change.countedValue !== undefined && change.countedValue !== null
-
-
-
-        ? change.countedValue + (change.addedValue || 0)
-
-
-
-        : change.previousCount + (change.addedValue || 0);
-
-
-
-      const previousPrice = typeof change.previousPrice === 'number' ? change.previousPrice : null;
-
-
-
-      const newPrice = typeof change.newPrice === 'number' ? change.newPrice : null;
-
-
-
-      let priceDifference: number | null = null;
-
-
-
-      if (typeof change.priceChange === 'number') {
-
-
-
-        priceDifference = change.priceChange;
-
-
-
-      } else if (previousPrice !== null && newPrice !== null) {
-
-
-
-        priceDifference = newPrice - previousPrice;
-
-
-
-      } else if (previousPrice === null && newPrice !== null) {
-
-
-
-        priceDifference = newPrice;
-
-
-
-      } else if (previousPrice !== null && newPrice === null) {
-
-
-
-        priceDifference = -previousPrice;
-
-
-
-      }
-
-
-
-
-
-
-
-      return [
-
-
-
-        change.productName,
-
-
-
-        change.previousCount.toString(),
-
-
-
-        change.countedValue?.toString() || '-',
-
-
-
-        change.addedValue?.toString() || '0',
-
-
-
-        change.countedValue !== undefined && change.countedValue !== null
-
-
-
-          ? (countDifference > 0 ? '+' : '') + countDifference.toString()
-
-
-
-          : '-',
-
-
-
-        totalAmount.toString(),
-
-
-
-        previousPrice !== null ? previousPrice.toFixed(2) : '-',
-
-
-
-        newPrice !== null ? newPrice.toFixed(2) : '-',
-
-
-
-        priceDifference !== null ? `${priceDifference > 0 ? '+' : ''}${priceDifference.toFixed(2)}` : '-',
-
-
-
-        change.reason,
-
-
-
-        change.date
-
-
-
-      ];
-
-
-
-    });
-
-
-
-
-
-
-
-    const csvContent = [
-
-
-
-      headers.join(','),
-
-
-
-      ...rows.map(row => row.join(','))
-
-
-
-    ].join('\n');
-
-
-
-
-
-
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-
-
-    const link = document.createElement('a');
-
-
-
-    const url = URL.createObjectURL(blob);
-
-
-
-    link.setAttribute('href', url);
-
-
-
-    link.setAttribute('download', `stok_raporu_${report.date.replace(/\./g, '_')}.csv`);
-
-
-
-    link.style.visibility = 'hidden';
-
-
-
-    document.body.appendChild(link);
-
-
-
-    link.click();
-
-
-
-    document.body.removeChild(link);
-
-
-
-  };
 
 
 
@@ -4739,8 +4331,6 @@ export default function App() {
                       <Button
                         onClick={async () => {
                           // Apply changes for this single item
-                          const today = new Date().toLocaleDateString('tr-TR');
-
                           const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
                           const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
                           const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
@@ -4783,60 +4373,23 @@ export default function App() {
                               await updateProductBarcode(item.id, pendingBarcode as string);
                             }
 
-                            // Build change reason
-                            let reason = '';
-                            if (stockChanged && priceChanged && costChanged) {
-                              reason = 'Stok + Fiyat + Maliyet';
-                            } else if (stockChanged && priceChanged) {
-                              reason = 'Stok + Fiyat';
-                            } else if (stockChanged && costChanged) {
-                              reason = 'Stok + Maliyet';
-                            } else if (priceChanged && costChanged) {
-                              reason = 'Fiyat + Maliyet';
-                            } else if (stockChanged) {
-                              if (countedValue !== null && addedValue > 0) {
-                                reason = 'Sayim + Ekleme';
-                              } else if (countedValue !== null) {
-                                reason = 'Sayim';
-                              } else {
-                                reason = 'Ekleme';
-                              }
-                            } else if (priceChanged) {
-                              reason = 'Fiyat';
-                            } else if (costChanged) {
-                              reason = 'Maliyet';
-                            } else if (barcodeChanged) {
-                              reason = 'Barkod';
+                            // Add to counting session if active
+                            if (isSessionActive) {
+                              addChange({
+                                productId: item.id,
+                                productName: item.name,
+                                barcode: item.barcode,
+                                previousCount: item.count,
+                                countedValue: countedValue ?? undefined,
+                                addedValue: addedValue as number,
+                                finalCount: finalCount,
+                                previousPrice,
+                                newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
+                                previousCost,
+                                newCost: costChanged ? (pendingCost as number) : previousCost,
+                                timestamp: new Date().toISOString(),
+                              });
                             }
-
-                            const changeValue = stockChanged ? finalCount - item.count : 0;
-                            const computedPriceChange = priceChanged
-                              ? (previousPrice !== undefined ? (pendingPrice as number) - previousPrice : pendingPrice as number)
-                              : undefined;
-                            const computedCostChange = costChanged
-                              ? (previousCost !== undefined ? (pendingCost as number) - previousCost : pendingCost as number)
-                              : undefined;
-
-                            // Add to stock changes history
-                            addStockChanges([{
-                              id: item.id,
-                              date: today,
-                              productName: item.name,
-                              change: changeValue,
-                              reason,
-                              previousCount: item.count,
-                              countedValue: countedValue ?? undefined,
-                              addedValue: addedValue as number,
-                              finalCount: finalCount,
-                              previousPrice,
-                              newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
-                              priceChange: computedPriceChange,
-                              previousCost,
-                              newCost: costChanged ? (pendingCost as number) : previousCost,
-                              costChange: computedCostChange,
-                              previousBarcode: barcodeChanged ? item.barcode : undefined,
-                              newBarcode: barcodeChanged ? (pendingBarcode as string) : undefined,
-                            }]);
 
                             // Update local state
                             setStockData(prev => prev.map(product => {
