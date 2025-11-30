@@ -9,6 +9,7 @@
   nextPrice?: number;
   previousCost?: number;
   nextCost?: number;
+  newName?: string;
   imageUrl?: string;
   productGroupId?: number;
   isDeleted?: boolean;
@@ -32,6 +33,8 @@ export interface StockChange {
   costChange?: number;
   previousBarcode?: string;
   newBarcode?: string;
+  previousName?: string;
+  newName?: string;
 }
 
 export interface ProductGroup {

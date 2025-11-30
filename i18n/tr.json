@@ -37,6 +37,7 @@
   "filter.category": "Kategori",
 
   "item.product": "Ürün",
+  "item.name": "Ürün Adı",
   "item.barcode": "Barkod",
   "item.current": "Mevcut",
   "item.counted": "Sayılan",
@@ -125,7 +126,7 @@
   "login.error.credentials": "Kullanıcı adı veya şifre hatalı",
   "login.error.connection": "Sunucuya bağlanılamadı",
 
-  "errors.noChanges": "Güncellenecek stok, fiyat, maliyet veya barkod değişikliği bulunamadı!",
+  "errors.noChanges": "Güncellenecek stok, fiyat, maliyet, barkod veya isim değişikliği bulunamadı!",
   "errors.updateFailed": "Güncelleme sırasında kritik hata oluştu!\n\nDetay: {error}\n\nLütfen tekrar deneyin.",
   "errors.partialFail": "Güncelleme tamamlandı fakat bazı kayıtlar başarısız oldu.",
 

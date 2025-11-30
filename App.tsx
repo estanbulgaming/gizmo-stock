@@ -57,6 +57,8 @@ export default function App() {
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
+  const [nameValues, setNameValues] = useState<{ [key: string]: string }>({});
+
   const [wasteValues, setWasteValues] = useState<{ [key: string]: number | '' }>({});
 
   const { toasts, showToast, dismissToast } = useToast();
@@ -339,6 +341,13 @@ export default function App() {
 
   const handleBarcodeChange = useCallback((id: string, value: string) => {
     setBarcodeValues(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  }, []);
+
+  const handleNameChange = useCallback((id: string, value: string) => {
+    setNameValues(prev => ({
       ...prev,
       [id]: value
     }));
@@ -797,7 +806,69 @@ export default function App() {
 
   };
 
+  const updateProductName = async (productId: string, newNameValue: string) => {
+    try {
+      const getUrl = joinApi(`/v2.0/products/${productId}`);
+      addLog('info', 'NAME_API', `Ürün bilgisi alınıyor: ID ${productId}`, { getUrl });
 
+      const getResponse = await fetch(getUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!getResponse.ok) {
+        const errorText = await getResponse.text();
+        addLog('error', 'NAME_API', `GET request failed: ${getResponse.status}`, { url: getUrl, status: getResponse.status, errorText });
+        throw new Error(`HTTP error! status: ${getResponse.status}, body: ${errorText}`);
+      }
+
+      const productData = await getResponse.json();
+      addLog('info', 'NAME_API', `Ürün bilgisi alındı: ID ${productId}`, { productData });
+
+      const product = productData.result || productData;
+
+      const updatedProduct = {
+        id: product.id,
+        productType: product.productType,
+        guid: product.guid,
+        productImages: product.productImages,
+        productGroupId: product.productGroupId,
+        name: newNameValue,
+        price: product.price,
+        cost: product.cost,
+        barcode: product.barcode
+      };
+
+      const putUrl = joinApi('/v2.0/products');
+      addLog('info', 'NAME_API', `İsim güncelleniyor: ID ${productId} -> ${newNameValue}`, { putUrl, body: updatedProduct });
+
+      const putResponse = await fetch(putUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+
+      if (!putResponse.ok) {
+        const errorText = await putResponse.text();
+        addLog('error', 'NAME_API', `PUT request failed: ${putResponse.status}`, { url: putUrl, status: putResponse.status, errorText });
+        throw new Error(`HTTP error! status: ${putResponse.status}, body: ${errorText}`);
+      }
+
+      addLog('success', 'NAME_API', `İsim güncellendi: ID ${productId} -> ${newNameValue}`);
+      const result = await putResponse.json().catch(() => ({ success: true }));
+      return result;
+
+    } catch (error) {
+      addLog('error', 'NAME_API', `İsim güncellenemedi: ID ${productId}`, error);
+      throw error;
+    }
+  };
 
   // Promise Pool for parallel API calls with concurrency limit
 
@@ -1153,7 +1224,49 @@ export default function App() {
 
   };
 
+  const updateNameBatch = async (updates: Array<{ productId: string; newName: string }>) => {
+    if (updates.length === 0) {
+      return [];
+    }
 
+    const concurrency = 5;
+    const results: Array<{ success: boolean; productId: string; error?: string }> = [];
+
+    setIsUpdatingStock(true);
+    setUpdateProgress({ current: 0, total: updates.length });
+
+    try {
+      for (let i = 0; i < updates.length; i += concurrency) {
+        const batch = updates.slice(i, i + concurrency);
+        const batchPromises = batch.map(async (update) => {
+          try {
+            await updateProductName(update.productId, update.newName);
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            return { success: true, productId: update.productId };
+          } catch (error) {
+            setUpdateProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            return {
+              success: false,
+              productId: update.productId,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+
+        if (i + concurrency < updates.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      return results;
+    } finally {
+      setIsUpdatingStock(false);
+      setUpdateProgress({ current: 0, total: 0 });
+    }
+  };
 
   // API Functions
 
@@ -1215,6 +1328,8 @@ export default function App() {
 
     const barcodeUpdates: Array<{ productId: string; newBarcode: string }> = [];
 
+    const nameUpdates: Array<{ productId: string; newName: string }> = [];
+
 
 
     const updatedStockData = stockData.map(item => {
@@ -1231,7 +1346,7 @@ export default function App() {
 
       const pendingBarcode = barcodeValues[item.id] || null;
 
-
+      const pendingName = nameValues[item.id] || null;
 
       let finalCount = item.count;
 
@@ -1259,7 +1374,7 @@ export default function App() {
 
       const barcodeChanged = pendingBarcode !== null && pendingBarcode.trim() !== '' && pendingBarcode !== item.barcode;
 
-
+      const nameChanged = pendingName !== null && pendingName.trim() !== '' && pendingName !== item.name;
 
       if (stockChanged) {
 
@@ -1315,9 +1430,19 @@ export default function App() {
 
       }
 
+      if (nameChanged) {
 
+        nameUpdates.push({
 
-      if (stockChanged || priceChanged || costChanged || barcodeChanged) {
+          productId: item.id,
+
+          newName: pendingName as string
+
+        });
+
+      }
+
+      if (stockChanged || priceChanged || costChanged || barcodeChanged || nameChanged) {
 
         let reason = '';
 
@@ -1420,7 +1545,11 @@ export default function App() {
 
           newCost: costChanged ? (pendingCost as number) : previousCost,
 
-          costChange: computedCostChange
+          costChange: computedCostChange,
+
+          previousName: nameChanged ? item.name : undefined,
+
+          newName: nameChanged ? (pendingName as string) : undefined
 
         });
 
@@ -1438,7 +1567,9 @@ export default function App() {
 
         cost: costChanged ? (pendingCost as number) : item.cost,
 
-        barcode: barcodeChanged ? (pendingBarcode as string) : item.barcode
+        barcode: barcodeChanged ? (pendingBarcode as string) : item.barcode,
+
+        name: nameChanged ? (pendingName as string) : item.name
 
       };
 
@@ -1446,7 +1577,7 @@ export default function App() {
 
 
 
-    if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0 && barcodeUpdates.length === 0) {
+    if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0 && barcodeUpdates.length === 0 && nameUpdates.length === 0) {
 
       showToast('warning', t('errors.noChanges'));
 
@@ -1482,9 +1613,13 @@ export default function App() {
 
     }
 
+    if (nameUpdates.length > 0) {
 
+      summaryParts.push(`Isim: ${nameUpdates.length} urun`);
 
-    const totalUpdates = stockUpdates.length + priceUpdates.length + costUpdates.length + barcodeUpdates.length;
+    }
+
+    const totalUpdates = stockUpdates.length + priceUpdates.length + costUpdates.length + barcodeUpdates.length + nameUpdates.length;
     const details = summaryParts.join('\n');
 
     if (!confirm(t('confirm.applyChanges', { details: `${totalUpdates} updates\n${details}` }))) {
@@ -1545,7 +1680,11 @@ export default function App() {
 
       }
 
-
+      let nameResults: Array<{ success: boolean; productId: string; error?: string }> = [];
+      if (nameUpdates.length > 0) {
+        addLog('info', 'NAME_BATCH', `${nameUpdates.length} urunun ismi guncelleniyor...`, nameUpdates);
+        nameResults = await updateNameBatch(nameUpdates);
+      }
 
       // Save previous/next price values to localStorage
 
@@ -1610,6 +1749,10 @@ export default function App() {
       const failedBarcode = barcodeResults.filter(result => !result.success);
 
       const successfulBarcode = barcodeResults.filter(result => result.success);
+
+      const failedName = nameResults.filter(result => !result.success);
+
+      const successfulName = nameResults.filter(result => result.success);
 
 
 
@@ -1739,9 +1882,37 @@ export default function App() {
 
       }
 
+      if (nameUpdates.length > 0) {
 
+        if (failedName.length > 0) {
 
-      const totalFailures = failedStock.length + failedPrice.length + failedCost.length + failedBarcode.length;
+          const failedProducts = failedName.map(f => {
+
+            const product = stockData.find(p => p.id === f.productId);
+
+            return product?.name || f.productId;
+
+          }).join(', ');
+
+          addLog('warning', 'NAME_BATCH', `Kismi basari: ${successfulName.length} basarili, ${failedName.length} basarisiz`, {
+
+            successful: successfulName.length,
+
+            failed: failedName.length,
+
+            failedProducts
+
+          });
+
+        } else {
+
+          addLog('success', 'NAME_BATCH', `Tum isim guncellemeleri basarili: ${successfulName.length} urun`);
+
+        }
+
+      }
+
+      const totalFailures = failedStock.length + failedPrice.length + failedCost.length + failedBarcode.length + failedName.length;
 
       if (totalFailures > 0) {
 
@@ -1768,6 +1939,12 @@ export default function App() {
         if (barcodeUpdates.length > 0) {
 
           failureLines.push(`Barkod - basarili: ${successfulBarcode.length}, basarisiz: ${failedBarcode.length}`);
+
+        }
+
+        if (nameUpdates.length > 0) {
+
+          failureLines.push(`Isim - basarili: ${successfulName.length}, basarisiz: ${failedName.length}`);
 
         }
 
@@ -1815,6 +1992,8 @@ export default function App() {
       setPriceValues({});
 
       setBarcodeValues({});
+
+      setNameValues({});
 
       setCostValues({});
 
@@ -3793,15 +3972,25 @@ export default function App() {
 
                     <div className="flex-1 min-w-0">
 
-                      <p className="text-xs text-muted-foreground">Ürün</p>
+                      <p className="text-xs text-muted-foreground">{t('item.name')}</p>
 
-                      <p className="font-medium text-sm break-words">{item.name}</p>
+                      <Input
 
-                      <p className="text-xs text-muted-foreground">ID: {item.id}</p>
+                        value={nameValues[item.id] ?? item.name}
+
+                        onChange={(e) => handleNameChange(item.id, e.target.value)}
+
+                        placeholder={item.name}
+
+                        className="text-sm h-7 px-2 font-medium"
+
+                      />
+
+                      <p className="text-xs text-muted-foreground mt-1">ID: {item.id}</p>
 
                       <div className="flex items-center gap-2 mt-1">
 
-                        <p className="text-xs text-muted-foreground">Barkod:</p>
+                        <p className="text-xs text-muted-foreground">{t('item.barcode')}:</p>
 
                         <Input
 
@@ -4079,15 +4268,25 @@ export default function App() {
 
                     <div className="flex-1 min-w-0">
 
-                      <p className="text-sm text-muted-foreground">Ürün</p>
+                      <p className="text-sm text-muted-foreground">{t('item.name')}</p>
 
-                      <p className="break-words">{item.name}</p>
+                      <Input
 
-                      <p className="text-sm text-muted-foreground">ID: {item.id}</p>
+                        value={nameValues[item.id] ?? item.name}
+
+                        onChange={(e) => handleNameChange(item.id, e.target.value)}
+
+                        placeholder={item.name}
+
+                        className="text-sm h-8 px-2 font-medium max-w-md"
+
+                      />
+
+                      <p className="text-sm text-muted-foreground mt-1">ID: {item.id}</p>
 
                       <div className="flex items-center gap-2 mt-1">
 
-                        <p className="text-sm text-muted-foreground">Barkod:</p>
+                        <p className="text-sm text-muted-foreground">{t('item.barcode')}:</p>
 
                         <Input
 

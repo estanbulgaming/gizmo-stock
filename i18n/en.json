@@ -37,6 +37,7 @@
   "filter.category": "Category",
 
   "item.product": "Product",
+  "item.name": "Product Name",
   "item.barcode": "Barcode",
   "item.current": "Current",
   "item.counted": "Counted",
@@ -125,7 +126,7 @@
   "login.error.credentials": "Invalid username or password",
   "login.error.connection": "Could not connect to server",
 
-  "errors.noChanges": "No stock, price, cost, or barcode changes to update!",
+  "errors.noChanges": "No stock, price, cost, barcode, or name changes to update!",
   "errors.updateFailed": "Critical error during update!\n\nDetail: {error}\n\nPlease try again.",
   "errors.partialFail": "Update completed but some records failed.",
 
