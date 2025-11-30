@@ -31,7 +31,7 @@ import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl, getCachedProducts, setCachedProducts } from './services/api';
 
 
 
@@ -423,33 +423,37 @@ export default function App() {
 
 
 
-  // Load product image for a specific product (real API via proxy)
-
+  // Load product image for a specific product (with localStorage cache)
   const loadProductImage = async (productId: string) => {
     if (!apiConfig.showProductImages) return;
     if (productImages[productId]) return;
-    const product = stockData.find(p => p.id === productId);
-    if (!product) {
-      addLog('warning', 'IMAGE', `Ürün bulunamadı: ${productId}`);
+
+    // Check localStorage cache first
+    const cachedUrl = getCachedImageUrl(productId);
+    if (cachedUrl) {
+      setProductImages(prev => ({ ...prev, [productId]: cachedUrl }));
+      setStockData(prev => prev.map(item =>
+        item.id === productId ? { ...item, imageUrl: cachedUrl } : item
+      ));
       return;
     }
-    addLog('info', 'IMAGE', `Ürün fotoğrafı yükleniyor: ${product.name}`);
+
+    const product = stockData.find(p => p.id === productId);
+    if (!product) return;
+
     try {
       const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, productId, product);
-      if (!imageUrl) {
-        addLog('warning', 'IMAGE', 'Ürün için fotoğraf bulunamadı');
-        return;
-      }
-      setProductImages(prev => ({
-        ...prev,
-        [productId]: imageUrl,
-      }));
+      if (!imageUrl) return;
+
+      // Save to localStorage cache
+      setCachedImageUrl(productId, imageUrl);
+
+      setProductImages(prev => ({ ...prev, [productId]: imageUrl }));
       setStockData(prev => prev.map(item =>
         item.id === productId ? { ...item, imageUrl } : item
       ));
-      addLog('success', 'IMAGE', `Ürün fotoğrafı yüklendi: ${product.name}`);
-    } catch (error) {
-      addLog('error', 'IMAGE', `Ürün fotoğrafı yüklenirken hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    } catch {
+      // Silently fail - no need to log every image failure
     }
   };
 
@@ -1161,33 +1165,51 @@ export default function App() {
 
 
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (forceRefresh = false) => {
     setIsLoadingProducts(true);
+
+    // Try cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = getCachedProducts();
+      if (cached && cached.length > 0) {
+        setStockData(cached);
+        setCountedValues({});
+        setAddedValues({});
+        setPriceValues({});
+        addLog('info', 'PRODUCTS_API', `${cached.length} ürün cache'den yüklendi`);
+        setIsLoadingProducts(false);
+
+        // Load images for cached products
+        if (apiConfig.showProductImages) {
+          const idsToLoad = cached.filter(p => !p.imageUrl).slice(0, 24).map(p => p.id);
+          if (idsToLoad.length > 0) {
+            const concurrency = 5;
+            for (let i = 0; i < idsToLoad.length; i += concurrency) {
+              const batch = idsToLoad.slice(i, i + concurrency);
+              await Promise.all(batch.map(id => loadProductImage(id)));
+            }
+          }
+        }
+        return;
+      }
+    }
+
     addLog('info', 'PRODUCTS_API', 'Ürünler yükleniyor...');
-    const deletedParam = apiConfig.includeDeleted ? "IsDeleted=true" : "IsDeleted=false";
-    const requestUrl = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}`;
-    addLog('info', 'PRODUCTS_API', 'API çağrısı yapılıyor', {
-      url: requestUrl,
-      auth: `${apiConfig.username}:***`,
-      params: { deletedParam, limit: apiConfig.paginationLimit },
-    });
     try {
       const { products, totalProducts, totalStock } = await fetchProductsService({ apiConfig, joinApi });
       setStockData(products);
       setCountedValues({});
       setAddedValues({});
       setPriceValues({});
+
+      // Save to cache
+      setCachedProducts(products);
+
       fetchStocksForProducts(products.map((p) => p.id));
-      addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`, {
-        productCount: totalProducts,
-        totalStock,
-        hasImages: products.filter(p => p.imageUrl).length,
-      });
+      addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`);
+
       if (apiConfig.showProductImages) {
-        const idsToLoad = products
-          .filter(p => !p.imageUrl)
-          .slice(0, 24)
-          .map(p => p.id);
+        const idsToLoad = products.filter(p => !p.imageUrl).slice(0, 24).map(p => p.id);
         if (idsToLoad.length > 0) {
           const concurrency = 5;
           for (let i = 0; i < idsToLoad.length; i += concurrency) {
