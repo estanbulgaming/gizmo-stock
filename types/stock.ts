@@ -29,6 +29,8 @@ export interface StockChange {
   previousCost?: number;
   newCost?: number;
   costChange?: number;
+  previousBarcode?: string;
+  newBarcode?: string;
 }
 
 export interface DailyReport {
