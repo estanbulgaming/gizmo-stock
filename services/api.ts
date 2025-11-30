@@ -243,7 +243,7 @@ export const fetchProductImageUrl = async (
         : [];
 
   const records = rawList.filter(isRecord);
-  const mainImage = records.find((img) => Boolean(img['isMain'])) ?? records[0];
+  const mainImage = records.find((img: Record<string, unknown>) => Boolean(img['isMain'])) ?? records[0];
 
   return (
     getImageSrcFromRecord(mainImage, apiConfig.serverIP) ??

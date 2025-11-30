@@ -37,6 +37,7 @@
   "filter.category": "Κατηγορία",
 
   "item.product": "Προϊόν",
+  "item.name": "Όνομα Προϊόντος",
   "item.barcode": "Barcode",
   "item.current": "Τρέχον",
   "item.counted": "Μετρημένο",
@@ -123,7 +124,7 @@
   "login.submit": "Σύνδεση",
   "login.error.required": "Παρακαλώ συμπληρώστε όλα τα πεδία",
 
-  "errors.noChanges": "Δεν υπάρχουν αλλαγές αποθέματος, τιμής, κόστους ή barcode για ενημέρωση!",
+  "errors.noChanges": "Δεν υπάρχουν αλλαγές αποθέματος, τιμής, κόστους, barcode ή ονόματος για ενημέρωση!",
   "errors.updateFailed": "Κρίσιμο σφάλμα κατά την ενημέρωση!\n\nΛεπτομέρειες: {error}\n\nΠαρακαλώ δοκιμάστε ξανά.",
   "errors.partialFail": "Η ενημέρωση ολοκληρώθηκε αλλά ορισμένες εγγραφές απέτυχαν.",
 

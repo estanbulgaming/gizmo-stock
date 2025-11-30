@@ -9,6 +9,7 @@
   nextPrice?: number;
   previousCost?: number;
   nextCost?: number;
+  newName?: string;
   imageUrl?: string;
   productGroupId?: number;
   isDeleted?: boolean;
@@ -23,6 +24,8 @@ export interface StockChange {
   previousCount: number;
   countedValue?: number;
   addedValue?: number;
+  wasteValue?: number;
+  wasteCost?: number;
   finalCount: number;
   previousPrice?: number;
   newPrice?: number;
@@ -32,6 +35,8 @@ export interface StockChange {
   costChange?: number;
   previousBarcode?: string;
   newBarcode?: string;
+  previousName?: string;
+  newName?: string;
 }
 
 export interface ProductGroup {
