@@ -87,34 +87,25 @@ export default function App() {
 
 
   // Auto-load missing product images when the setting is enabled
-
   useEffect(() => {
-
     if (!apiConfig.showProductImages || stockData.length === 0) return;
 
     const idsToLoad = stockData
-
       .filter(p => !p.imageUrl && !productImages[p.id])
-
-      .slice(0, 24)
-
+      .slice(0, 12) // Reduced from 24 to 12
       .map(p => p.id);
 
     if (idsToLoad.length === 0) return;
 
-    const concurrency = 5;
-
-    (async () => {
-
-      for (let i = 0; i < idsToLoad.length; i += concurrency) {
-
-        const batch = idsToLoad.slice(i, i + concurrency);
-
-        await Promise.all(batch.map(id => loadProductImage(id)));
-
-      }
-
-    })();
+    // Load images one by one with delay to avoid overwhelming the browser
+    let index = 0;
+    const loadNext = () => {
+      if (index >= idsToLoad.length) return;
+      loadProductImage(idsToLoad[index]);
+      index++;
+      setTimeout(loadNext, 200); // 200ms delay between each request
+    };
+    loadNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiConfig.showProductImages, stockData]);
 
@@ -1179,17 +1170,7 @@ export default function App() {
 
       fetchStocksForProducts(products.map((p) => p.id));
       addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`);
-
-      if (apiConfig.showProductImages) {
-        const idsToLoad = products.filter(p => !p.imageUrl).slice(0, 24).map(p => p.id);
-        if (idsToLoad.length > 0) {
-          const concurrency = 5;
-          for (let i = 0; i < idsToLoad.length; i += concurrency) {
-            const batch = idsToLoad.slice(i, i + concurrency);
-            await Promise.all(batch.map(id => loadProductImage(id)));
-          }
-        }
-      }
+      // Images are loaded by useEffect, not here
     } catch (error) {
       addLog('error', 'PRODUCTS_API', 'Ürünler yüklenirken hata', error);
       showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
