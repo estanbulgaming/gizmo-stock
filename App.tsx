@@ -31,7 +31,7 @@ import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl, getCachedProducts, setCachedProducts } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
 
 
 
@@ -1165,45 +1165,17 @@ export default function App() {
 
 
 
-  const fetchProducts = async (forceRefresh = false) => {
+  const fetchProducts = async () => {
     setIsLoadingProducts(true);
-
-    // Try cache first (unless force refresh)
-    if (!forceRefresh) {
-      const cached = getCachedProducts();
-      if (cached && cached.length > 0) {
-        setStockData(cached);
-        setCountedValues({});
-        setAddedValues({});
-        setPriceValues({});
-        addLog('info', 'PRODUCTS_API', `${cached.length} ürün cache'den yüklendi`);
-        setIsLoadingProducts(false);
-
-        // Load images for cached products
-        if (apiConfig.showProductImages) {
-          const idsToLoad = cached.filter(p => !p.imageUrl).slice(0, 24).map(p => p.id);
-          if (idsToLoad.length > 0) {
-            const concurrency = 5;
-            for (let i = 0; i < idsToLoad.length; i += concurrency) {
-              const batch = idsToLoad.slice(i, i + concurrency);
-              await Promise.all(batch.map(id => loadProductImage(id)));
-            }
-          }
-        }
-        return;
-      }
-    }
-
     addLog('info', 'PRODUCTS_API', 'Ürünler yükleniyor...');
+
     try {
+      // Always fetch fresh data from API (stock counts must be current)
       const { products, totalProducts, totalStock } = await fetchProductsService({ apiConfig, joinApi });
       setStockData(products);
       setCountedValues({});
       setAddedValues({});
       setPriceValues({});
-
-      // Save to cache
-      setCachedProducts(products);
 
       fetchStocksForProducts(products.map((p) => p.id));
       addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`);
