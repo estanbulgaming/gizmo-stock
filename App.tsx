@@ -2886,7 +2886,7 @@ export default function App() {
 
                   <div className="bg-muted p-2 sm:p-3 rounded">
 
-                    <p className="text-xs sm:text-sm text-muted-foreground">Fiyat Degisimi</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{t('history.priceChange')}</p>
 
                     <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalPriceChanges}</p>
 
@@ -3052,7 +3052,7 @@ export default function App() {
 
                             <div className="text-center">
 
-                              <p className="text-muted-foreground">Fiyat Farki</p>
+                              <p className="text-muted-foreground">{t('item.priceDiff')}</p>
 
                               <p className={`font-medium ${
 
@@ -3160,7 +3160,7 @@ export default function App() {
 
                         <div>
 
-                          Fiyat: {formatPrice(change.previousPrice ?? null)} ? {formatPrice(change.newPrice ?? null)}
+                          {t('item.price')}: {formatPrice(change.previousPrice ?? null)} → {formatPrice(change.newPrice ?? null)}
 
                           {typeof change.priceChange === 'number' && ` (${change.priceChange > 0 ? '+' : ''}${change.priceChange.toFixed(2)})`}
 
@@ -4406,9 +4406,9 @@ export default function App() {
 
                 <>
 
-                  <span className="sm:hidden">Uygula</span>
+                  <span className="sm:hidden">{t('controls.apply.short')}</span>
 
-                  <span className="hidden sm:inline">Değişiklikleri Uygula</span>
+                  <span className="hidden sm:inline">{t('controls.apply')}</span>
 
                 </>
 
@@ -5072,7 +5072,7 @@ export default function App() {
 
                     <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground min-w-[50px]">Fiyat:</p>
+                      <p className="text-muted-foreground min-w-[50px]">{t('item.price')}:</p>
 
                       <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{formatPrice(currentPrice)}</p>
 
@@ -5080,7 +5080,7 @@ export default function App() {
 
                     <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground min-w-[40px]">Yeni:</p>
+                      <p className="text-muted-foreground min-w-[40px]">{t('item.new')}:</p>
 
                       <NumpadInput
 
@@ -5110,7 +5110,7 @@ export default function App() {
 
                     <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground min-w-[40px]">Yeni:</p>
+                      <p className="text-muted-foreground min-w-[40px]">{t('item.new')}:</p>
 
                       <NumpadInput
 
@@ -5554,7 +5554,7 @@ export default function App() {
 
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded text-xs sm:hidden">
 
-                Dokunarak kapat
+                {t('ui.tapToClose')}
 
               </div>
 

@@ -119,5 +119,8 @@
 
   "success.updateComplete": "All updates completed successfully!",
 
-  "confirm.applyChanges": "Are you sure you want to apply the following changes?\n\n{details}\n\nThis action cannot be undone."
+  "confirm.applyChanges": "Are you sure you want to apply the following changes?\n\n{details}\n\nThis action cannot be undone.",
+
+  "item.new": "New",
+  "ui.tapToClose": "Tap to close"
 }

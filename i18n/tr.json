@@ -119,5 +119,8 @@
 
   "success.updateComplete": "Tüm güncellemeler başarıyla tamamlandı!",
 
-  "confirm.applyChanges": "Aşağıdaki değişiklikleri uygulamak istediğinizden emin misiniz?\n\n{details}\n\nBu işlem geri alınamaz."
+  "confirm.applyChanges": "Aşağıdaki değişiklikleri uygulamak istediğinizden emin misiniz?\n\n{details}\n\nBu işlem geri alınamaz.",
+
+  "item.new": "Yeni",
+  "ui.tapToClose": "Dokunarak kapat"
 }
