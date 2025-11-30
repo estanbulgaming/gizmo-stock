@@ -78,11 +78,12 @@ export const fetchProducts = async (
   { apiConfig, joinApi }: ApiContext,
   productGroupIds?: number[]
 ): Promise<FetchProductsResult> => {
-  const deletedParam = apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false';
+  const deletedParam = apiConfig.includeDeleted ? 'IsDeleted=true' : '';
   const groupParams = productGroupIds && productGroupIds.length > 0
     ? productGroupIds.map(id => `ProductGroupId=${id}`).join('&')
     : '';
-  const url = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}${groupParams ? '&' + groupParams : ''}`;
+  const baseUrl = `${joinApi(apiConfig.endpoint)}?${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}`;
+  const url = `${baseUrl}${deletedParam ? '&' + deletedParam : ''}${groupParams ? '&' + groupParams : ''}`;
 
   const response = await fetch(url, {
     method: 'GET',
