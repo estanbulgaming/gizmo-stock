@@ -74,9 +74,15 @@ export const fetchProductGroups = async ({ apiConfig, joinApi }: ApiContext): Pr
   return groups;
 };
 
-export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise<FetchProductsResult> => {
+export const fetchProducts = async (
+  { apiConfig, joinApi }: ApiContext,
+  productGroupIds?: number[]
+): Promise<FetchProductsResult> => {
   const deletedParam = apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false';
-  const url = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}`;
+  const groupParams = productGroupIds && productGroupIds.length > 0
+    ? productGroupIds.map(id => `ProductGroupId=${id}`).join('&')
+    : '';
+  const url = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}${groupParams ? '&' + groupParams : ''}`;
 
   const response = await fetch(url, {
     method: 'GET',

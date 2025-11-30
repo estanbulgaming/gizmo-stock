@@ -1178,7 +1178,11 @@ export default function App() {
 
     try {
       // Always fetch fresh data from API (stock counts must be current)
-      const { products, totalProducts, totalStock } = await fetchProductsService({ apiConfig, joinApi });
+      // Pass selected product groups to filter on server-side
+      const { products, totalProducts, totalStock } = await fetchProductsService(
+        { apiConfig, joinApi },
+        selectedProductGroups.length > 0 ? selectedProductGroups : undefined
+      );
       setStockData(products);
       setCountedValues({});
       setAddedValues({});
