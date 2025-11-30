@@ -11,6 +11,7 @@
   nextCost?: number;
   imageUrl?: string;
   productGroupId?: number;
+  isDeleted?: boolean;
 }
 
 export interface StockChange {

@@ -136,6 +136,7 @@ export const fetchProducts = async (
       nextCost: priceTracking.nextCost,
       productGroupId:
         productGroupIdValue == null ? undefined : parseNumber(productGroupIdValue, 0),
+      isDeleted: Boolean(entry['isDeleted']),
     });
   }
 
@@ -147,6 +148,36 @@ export const fetchProducts = async (
     totalProducts,
     totalStock,
   };
+};
+
+export const deleteProduct = async (
+  { apiConfig, joinApi }: ApiContext,
+  productId: string
+): Promise<void> => {
+  const url = `${joinApi(`/v2.0/products/${productId}`)}?id=${productId}`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: authHeader(apiConfig),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+};
+
+export const restoreProduct = async (
+  { apiConfig, joinApi }: ApiContext,
+  productId: string
+): Promise<void> => {
+  const url = `${joinApi(`/v2.0/products/${productId}/undelete`)}?id=${productId}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: authHeader(apiConfig),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 };
 
 export const fetchProductImageUrl = async (

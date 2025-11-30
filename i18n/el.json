@@ -15,6 +15,8 @@
   "controls.updating": "Ενημέρωση...",
   "controls.loading": "Φόρτωση...",
   "controls.undo": "Αναίρεση",
+  "controls.delete": "Διαγραφή",
+  "controls.restore": "Επαναφορά",
 
   "progress.updating": "Ενημέρωση αποθέματος...",
   "progress.fetching": "Φόρτωση αποθέματος...",
@@ -128,6 +130,7 @@
   "success.updateComplete": "Όλες οι ενημερώσεις ολοκληρώθηκαν επιτυχώς!",
 
   "confirm.applyChanges": "Είστε σίγουροι ότι θέλετε να εφαρμόσετε τις ακόλουθες αλλαγές;\n\n{details}\n\nΑυτή η ενέργεια δεν μπορεί να αναιρεθεί.",
+  "confirm.deleteProduct": "Είστε σίγουροι ότι θέλετε να διαγράψετε {name};",
 
   "item.new": "Νέο",
   "ui.tapToClose": "Πατήστε για κλείσιμο"
