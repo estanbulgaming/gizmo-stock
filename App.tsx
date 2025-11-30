@@ -3,7 +3,6 @@
 import { NumpadInput } from './components/NumpadInput';
 
 
-import { Calendar } from './components/ui/calendar';
 
 import { Card } from './components/ui/card';
 
@@ -17,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 import { Checkbox } from './components/ui/checkbox';
 
-import { Download, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check } from 'lucide-react';
+import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -26,8 +25,8 @@ import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { t, getLang, setLang, availableLanguages, languageNames, Lang } from './i18n';
 
 import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
-import { useStockHistory } from './hooks/useStockHistory';
 import { useToast } from './hooks/useToast';
+import { useCountingSession, downloadSessionReport } from './hooks/useCountingSession';
 import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
@@ -58,16 +57,10 @@ export default function App() {
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
-  const { stockChanges, addChanges: addStockChanges, clearHistory: clearStockHistory } = useStockHistory();
   const { toasts, showToast, dismissToast } = useToast();
+  const { session, isSessionActive, startSession, endSession, addChange, clearSession } = useCountingSession();
 
-  const [currentPage, setCurrentPage] = useState<'stock' | 'history' | 'settings'>('stock');
-
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
-  const [showDateList, setShowDateList] = useState(true);
-
-  const [currentDateIndex, setCurrentDateIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState<'stock' | 'counting' | 'settings'>('stock');
 
   
 
@@ -2556,650 +2549,116 @@ export default function App() {
 
 
 
-  const StockHistoryPage = () => {
+  const CountingPage = () => {
+    const handleStartSession = () => {
+      startSession();
+      showToast('success', t('counting.active'));
+    };
 
-    const datesWithChanges = getDatesWithChanges();
+    const handleEndSession = () => {
+      if (!session) return;
 
-    const uniqueDatesSorted = getUniqueDatesSorted();
+      if (confirm(t('counting.confirmEnd'))) {
+        if (session.changes.length > 0) {
+          downloadSessionReport(session, t);
+        }
+        endSession();
+        showToast('success', t('counting.download'));
+      }
+    };
 
-    const selectedReport = selectedDate ? getDailyReport(selectedDate) : null;
+    const handleDownloadReport = () => {
+      if (!session) return;
+      downloadSessionReport(session, t);
+      showToast('success', t('counting.download'));
+    };
 
 
 
     return (
-
       <div className="space-y-6">
-
-        <div>
-
-          <h2>{t('history.title')}</h2>
-
-          <p className="text-muted-foreground">Günlük stok değişikliklerini görüntüleyin (← → tuşları ile navigasyon)</p>
-
-        </div>
-
-
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-
-          {/* Calendar/Date List */}
-
-          <Card className="p-3 sm:p-4">
-
-            <div className="space-y-4">
-
-              <div className="flex items-center justify-between">
-
-                <div className="flex items-center gap-2">
-
-                  {showDateList ? <List className="h-5 w-5" /> : <CalendarIcon className="h-5 w-5" />}
-
-                  <h3>{showDateList ? 'Sayım Günleri' : 'Sayım Takvimi'}</h3>
-
-                </div>
-
-                <Button
-
-                  variant="outline"
-
-                  size="sm"
-
-                  onClick={() => setShowDateList(!showDateList)}
-
-                  className="flex items-center gap-2"
-
-                >
-
-                  {showDateList ? <CalendarIcon className="h-4 w-4" /> : <List className="h-4 w-4" />}
-
-                  {showDateList ? 'Takvim' : 'Liste'}
-
-                </Button>
-
-              </div>
-
-
-
-              {showDateList ? (
-
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-
-                  {uniqueDatesSorted.length === 0 ? (
-
-                    <p className="text-muted-foreground text-center py-8">Henüz sayım yapılmamış</p>
-
-                  ) : (
-
-                    uniqueDatesSorted.map((dateStr, index) => {
-
-                      const [day, month, year] = dateStr.split('.').map(Number);
-
-                      const date = new Date(year, month - 1, day);
-
-                      const isSelected = selectedDate && selectedDate.toLocaleDateString('tr-TR') === dateStr;
-
-                      const report = getDailyReport(date);
-
-                      
-
-                      return (
-
-                        <div
-
-                          key={dateStr}
-
-                          onClick={() => {
-
-                            setSelectedDate(date);
-
-                            setCurrentDateIndex(index);
-
-                          }}
-
-                          className={`p-3 rounded cursor-pointer border transition-colors ${
-
-                            isSelected 
-
-                              ? 'bg-primary text-primary-foreground border-primary' 
-
-                              : 'hover:bg-muted border-border'
-
-                          }`}
-
-                        >
-
-                          <div className="flex items-center justify-between">
-
-                            <div>
-
-                              <p className="font-medium">{dateStr}</p>
-
-                              <p className="text-sm opacity-80">
-
-                                {report.totalProducts} ürün, {report.totalChanged} değişiklik
-
-                              </p>
-
-                            </div>
-
-                            <div className="text-right">
-
-                              <p className="text-sm">{t('item.counted')}: {report.totalCounted}</p>
-
-                              <p className="text-sm">{t('item.added')}: {report.totalAdded}</p>
-
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                      );
-
-                    })
-
-                  )}
-
-                </div>
-
-              ) : (
-
-                <>
-
-                  <Calendar
-
-                    mode="single"
-
-                    selected={selectedDate}
-
-                    onSelect={(date) => {
-
-                      if (date) {
-
-                        setSelectedDate(date);
-
-                        const dateStr = date.toLocaleDateString('tr-TR');
-
-                        const index = uniqueDatesSorted.indexOf(dateStr);
-
-                        if (index !== -1) setCurrentDateIndex(index);
-
-                      }
-
-                    }}
-
-                    modifiers={{
-
-                      hasChanges: datesWithChanges
-
-                    }}
-
-                    modifiersStyles={{
-
-                      hasChanges: {
-
-                        backgroundColor: 'hsl(var(--primary))',
-
-                        color: 'hsl(var(--primary-foreground))',
-
-                        fontWeight: 'bold'
-
-                      }
-
-                    }}
-
-                    className="rounded-md border"
-
-                  />
-
-                  <button
-
-                    onClick={() => setShowDateList(true)}
-
-                    className="text-sm text-primary hover:underline cursor-pointer"
-
-                  >
-
-                    <div className="flex items-center gap-2">
-
-                      <div className="w-3 h-3 bg-primary rounded"></div>
-
-                      <span>Sayım yapılan günler</span>
-
-                    </div>
-
-                  </button>
-
-                </>
-
-              )}
-
-            </div>
-
-          </Card>
-
-
-
-          {/* Daily Report */}
-
-          <Card className="p-3 sm:p-4">
-
-            {selectedReport ? (
-
-              <div className="space-y-4">
-
-                <div className="flex items-center justify-between">
-
-                  <div className="flex items-center gap-2">
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => navigateToDate('prev')}
-
-                      disabled={currentDateIndex === 0}
-
-                    >
-
-                      <ChevronLeft className="h-4 w-4" />
-
-                    </Button>
-
-                    <h3>Günlük Rapor - {selectedReport.date}</h3>
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => navigateToDate('next')}
-
-                      disabled={currentDateIndex === uniqueDatesSorted.length - 1}
-
-                    >
-
-                      <ChevronRight className="h-4 w-4" />
-
-                    </Button>
-
-                  </div>
-
-                  <Button
-
-                    size="sm"
-
-                    onClick={() => downloadCSVReport(selectedReport)}
-
-                    className="flex items-center gap-2"
-
-                  >
-
-                    <Download className="h-4 w-4" />
-
-                    CSV ?ndir
-
-                  </Button>
-
-                </div>
-
-
-
-                {/* Summary Stats */}
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-
-                  <div className="bg-muted p-2 sm:p-3 rounded">
-
-                    <p className="text-xs sm:text-sm text-muted-foreground">Toplam Urun</p>
-
-                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalProducts}</p>
-
-                  </div>
-
-                  <div className="bg-muted p-2 sm:p-3 rounded">
-
-                    <p className="text-xs sm:text-sm text-muted-foreground">Sayilan Urun</p>
-
-                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalCounted}</p>
-
-                  </div>
-
-                  <div className="bg-muted p-2 sm:p-3 rounded">
-
-                    <p className="text-xs sm:text-sm text-muted-foreground">Eklenen Urun</p>
-
-                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalAdded}</p>
-
-                  </div>
-
-                  <div className="bg-muted p-2 sm:p-3 rounded">
-
-                    <p className="text-xs sm:text-sm text-muted-foreground">Toplam Degisim</p>
-
-                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalChanged}</p>
-
-                  </div>
-
-                  <div className="bg-muted p-2 sm:p-3 rounded">
-
-                    <p className="text-xs sm:text-sm text-muted-foreground">{t('history.priceChange')}</p>
-
-                    <p className="text-lg sm:text-2xl font-bold">{selectedReport.totalPriceChanges}</p>
-
-                  </div>
-
-                </div>
-
-
-
-                {/* Changes List */}
-
-
-
-                <div className="space-y-2">
-
-                  <h4>De?i?iklik Detaylar?</h4>
-
-                  <div className="max-h-64 overflow-y-auto space-y-2">
-
-                    {selectedReport.changes.map((change, index) => {
-
-                      const priceDelta = typeof change.priceChange === 'number'
-
-                        ? change.priceChange
-
-                        : typeof change.newPrice === 'number' && typeof change.previousPrice === 'number'
-
-                          ? change.newPrice - change.previousPrice
-
-                          : typeof change.newPrice === 'number'
-
-                            ? change.newPrice
-
-                            : typeof change.previousPrice === 'number'
-
-                              ? -change.previousPrice
-
-                              : null;
-
-                      return (
-
-                        <div key={index} className="py-2 px-3 bg-muted rounded">
-
-                        <div className="flex items-center justify-between mb-2">
-
-                          <div className="flex-1">
-
-                            <p className="text-sm font-medium">{change.productName}</p>
-
-                            <p className="text-xs text-muted-foreground">{change.reason}</p>
-
-                          </div>
-
-                          <div className={`px-2 py-1 rounded text-sm ${
-
-                            change.change > 0 
-
-                              ? 'bg-green-100 text-green-800' 
-
-                              : 'bg-red-100 text-red-800'
-
-                          }`}>
-
-                            {change.change > 0 ? '+' : ''}{change.change}
-
-                          </div>
-
-                        </div>
-
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2 text-xs">
-
-                          <div className="text-center">
-
-                            <p className="text-muted-foreground">Mevcut</p>
-
-                            <p className="font-medium">{change.previousCount}</p>
-
-                          </div>
-
-                          <div className="text-center">
-
-                            <p className="text-muted-foreground">Sayim</p>
-
-                            <p className="font-medium">{change.countedValue ?? '-'}</p>
-
-                          </div>
-
-                          <div className="text-center hidden sm:block">
-
-                            <p className="text-muted-foreground">Eklenen</p>
-
-                            <p className="font-medium">{change.addedValue || 0}</p>
-
-                          </div>
-
-                          <div className="text-center hidden sm:block">
-
-                            <p className="text-muted-foreground">Fark</p>
-
-                            <p className={`font-medium ${
-
-                              change.countedValue !== undefined && change.countedValue !== null
-
-                                ? (change.countedValue - change.previousCount > 0 ? 'text-green-600' : 
-
-                                   change.countedValue - change.previousCount < 0 ? 'text-red-600' : 'text-muted-foreground')
-
-                                : 'text-muted-foreground'
-
-                            }`}>
-
-                              {change.countedValue !== undefined && change.countedValue !== null
-
-                                ? (change.countedValue - change.previousCount > 0 ? '+' : '') + (change.countedValue - change.previousCount)
-
-                                : '-'
-
-                              }
-
-                            </p>
-
-                          </div>
-
-                          <div className="text-center">
-
-                            <p className="text-muted-foreground">Toplam</p>
-
-                            <p className="font-medium">
-
-                              {change.countedValue !== undefined && change.countedValue !== null
-
-                                ? change.countedValue + (change.addedValue || 0)
-
-                                : change.previousCount + (change.addedValue || 0)
-
-                              }
-
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                        {(change.previousPrice !== undefined || change.newPrice !== undefined) && (
-
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2 text-xs mt-2">
-
-                            <div className="text-center">
-
-                              <p className="text-muted-foreground">{t('item.oldPrice')}</p>
-
-                              <p className="font-medium">{formatPrice(change.previousPrice ?? null)}</p>
-
-                            </div>
-
-                            <div className="text-center">
-
-                              <p className="text-muted-foreground">{t('item.newPrice')}</p>
-
-                              <p className="font-medium">{formatPrice(change.newPrice ?? null)}</p>
-
-                            </div>
-
-                            <div className="text-center">
-
-                              <p className="text-muted-foreground">{t('item.priceDiff')}</p>
-
-                              <p className={`font-medium ${
-
-                                priceDelta !== null
-
-                                  ? priceDelta > 0 ? 'text-green-600' :
-
-                                    priceDelta < 0 ? 'text-red-600' : 'text-muted-foreground'
-
-                                  : 'text-muted-foreground'
-
-                              }`}>
-
-                                {priceDelta !== null
-
-                                  ? `${priceDelta > 0 ? '+' : ''}${priceDelta.toFixed(2)}`
-
-                                  : '-'
-
-                                }
-
-                              </p>
-
-                            </div>
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-                      );
-
-                    })}
-
-                  </div>
-
-                </div>
-
-              </div>
-
+        <div className="flex items-center justify-between">
+          <div>
+            <h2>{t('counting.title')}</h2>
+            <p className="text-muted-foreground">
+              {isSessionActive ? t('counting.active') : t('counting.noSession')}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {!isSessionActive ? (
+              <Button onClick={handleStartSession} className="bg-green-600 hover:bg-green-700">
+                {t('counting.start')}
+              </Button>
             ) : (
-
-              <div className="text-center py-8">
-
-                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-
-                <p className="text-muted-foreground">Günlük rapor görmek için {showDateList ? 'listeden' : 'takvimden'} bir tarih seçin</p>
-
-                {uniqueDatesSorted.length === 0 && (
-
-                  <p className="text-sm text-muted-foreground mt-2">Henüz hiç sayım yapılmamış</p>
-
-                )}
-
-              </div>
-
+              <>
+                <Button onClick={handleDownloadReport} variant="outline" disabled={!session || session.changes.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('counting.download')}
+                </Button>
+                <Button onClick={handleEndSession} variant="destructive">
+                  {t('counting.end')}
+                </Button>
+              </>
             )}
-
-          </Card>
-
+          </div>
         </div>
 
-
-
-        {/* All Changes History */}
-
-        <Card className="p-4">
-
-          <h3 className="mb-4">Tüm Değişiklikler</h3>
-
-          {stockChanges.length === 0 ? (
-
-            <p className="text-muted-foreground text-center py-8">Henüz stok değişikliği yok</p>
-
-          ) : (
-
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-
-              {stockChanges.slice().reverse().map((change, index) => (
-
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
-
-                  <div className="flex-1">
-
-                    <p className="text-sm text-muted-foreground">{change.date}</p>
-
-                    <p>{change.productName}</p>
-
-                    <p className="text-xs text-muted-foreground">{change.reason}</p>
-
-                    <div className="text-xs text-muted-foreground mt-1 space-y-1">
-
-                      <div>
-
-                        {t('history.current')}: {change.previousCount} → {t('history.final')}: {change.finalCount}
-
-                        {change.countedValue !== undefined && ` (${t('history.countValue')}: ${change.countedValue})`}
-
-                        {change.addedValue ? ` (${t('item.added')}: ${change.addedValue})` : ''}
-
-                      </div>
-
-                      {(change.previousPrice !== undefined || change.newPrice !== undefined) && (
-
-                        <div>
-
-                          {t('item.price')}: {formatPrice(change.previousPrice ?? null)} → {formatPrice(change.newPrice ?? null)}
-
-                          {typeof change.priceChange === 'number' && ` (${change.priceChange > 0 ? '+' : ''}${change.priceChange.toFixed(2)})`}
-
-                        </div>
-
-                      )}
-
-                    </div>
-
-                  </div>
-
-                  <div className={`px-3 py-1 rounded ${
-
-                    change.change > 0 
-
-                      ? 'bg-green-100 text-green-800' 
-
-                      : 'bg-red-100 text-red-800'
-
-                  }`}>
-
-                    {change.change > 0 ? '+' : ''}{change.change}
-
-                  </div>
-
-                </div>
-
-              ))}
-
+        {!isSessionActive ? (
+          <Card className="p-8 text-center">
+            <div className="text-muted-foreground">
+              <p className="text-lg mb-2">{t('counting.noSession')}</p>
+              <p className="text-sm">{t('counting.noSessionHint')}</p>
             </div>
+          </Card>
+        ) : session && (
+          <Card className="p-4">
+            <div className="space-y-4">
+              {/* Session Info */}
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('counting.startedAt')}</p>
+                  <p className="font-medium">{new Date(session.startedAt).toLocaleString()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">{t('counting.changes')}</p>
+                  <p className="text-2xl font-bold">{session.changes.length}</p>
+                </div>
+              </div>
 
-          )}
-
-        </Card>
-
+              {/* Changes List */}
+              {session.changes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{t('counting.noChanges')}</p>
+                  <p className="text-sm mt-2">Stok sayfasından ürünlerde değişiklik yapın</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {session.changes.map((change, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded">
+                      <div>
+                        <p className="font-medium">{change.productName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {change.barcode && `${change.barcode} • `}
+                          {t('item.current')}: {change.previousCount} → {t('item.total')}: {change.finalCount}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {change.countedValue !== undefined && (
+                          <p className="text-sm">{t('item.counted')}: {change.countedValue}</p>
+                        )}
+                        {change.addedValue !== undefined && change.addedValue > 0 && (
+                          <p className="text-sm text-green-600">+{change.addedValue}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
-
     );
-
   };
 
 
@@ -4274,23 +3733,23 @@ export default function App() {
 
           <button
 
-            onClick={() => setCurrentPage('history')}
+            onClick={() => setCurrentPage('counting')}
 
             className={`flex-1 py-2 px-2 sm:px-4 rounded transition-colors text-sm sm:text-base ${
 
-              currentPage === 'history' 
+              currentPage === 'counting'
 
-                ? 'bg-primary text-primary-foreground' 
+                ? 'bg-primary text-primary-foreground'
 
                 : 'hover:bg-muted'
 
-            }`}
+            }${isSessionActive ? ' ring-2 ring-green-500' : ''}`}
 
           >
 
-            <span className="hidden sm:inline">{t('nav.history')}</span>
+            <span className="hidden sm:inline">{t('nav.counting')}</span>
 
-            <span className="sm:hidden">{t('nav.history')}</span>
+            <span className="sm:hidden">{t('nav.countingShort')}</span>
 
           </button>
 
@@ -4320,9 +3779,9 @@ export default function App() {
 
 
 
-        {currentPage === 'history' ? (
+        {currentPage === 'counting' ? (
 
-          <StockHistoryPage />
+          <CountingPage />
 
         ) : currentPage === 'settings' ? (
 
