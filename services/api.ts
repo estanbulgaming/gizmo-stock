@@ -150,34 +150,71 @@ export const fetchProducts = async (
   };
 };
 
-export const deleteProduct = async (
+// Update product isDeleted status via PUT
+const updateProductDeletedStatus = async (
   { apiConfig, joinApi }: ApiContext,
-  productId: string
+  productId: string,
+  isDeleted: boolean
 ): Promise<void> => {
-  const url = `${joinApi(`/v2.0/products/${productId}`)}?id=${productId}`;
-  const response = await fetch(url, {
-    method: 'DELETE',
-    headers: authHeader(apiConfig),
+  // First fetch the product to get all required fields
+  const getUrl = `${joinApi(`/v2.0/products/${productId}`)}?id=${productId}`;
+  const getResponse = await fetch(getUrl, {
+    method: 'GET',
+    headers: {
+      ...authHeader(apiConfig),
+      'Content-Type': 'application/json',
+    },
   });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  if (!getResponse.ok) {
+    throw new Error(`HTTP error! status: ${getResponse.status}`);
+  }
+
+  const productData = await getResponse.json();
+  const product = productData.result || productData;
+
+  // Build update payload with required fields
+  const updatedProduct = {
+    id: product.id,
+    productType: product.productType,
+    guid: product.guid,
+    productGroupId: product.productGroupId,
+    name: product.name,
+    productImages: product.productImages,
+    price: product.price,
+    cost: product.cost,
+    barcode: product.barcode,
+    isDeleted,
+  };
+
+  // Send PUT request to update product
+  const putUrl = joinApi('/v2.0/products');
+  const putResponse = await fetch(putUrl, {
+    method: 'PUT',
+    headers: {
+      ...authHeader(apiConfig),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updatedProduct),
+  });
+
+  if (!putResponse.ok) {
+    throw new Error(`HTTP error! status: ${putResponse.status}`);
   }
 };
 
-export const restoreProduct = async (
-  { apiConfig, joinApi }: ApiContext,
+export const deleteProduct = async (
+  context: ApiContext,
   productId: string
 ): Promise<void> => {
-  const url = `${joinApi(`/v2.0/products/${productId}/undelete`)}?id=${productId}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: authHeader(apiConfig),
-  });
+  await updateProductDeletedStatus(context, productId, true);
+};
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+export const restoreProduct = async (
+  context: ApiContext,
+  productId: string
+): Promise<void> => {
+  await updateProductDeletedStatus(context, productId, false);
 };
 
 export const fetchProductImageUrl = async (
