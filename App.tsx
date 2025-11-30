@@ -57,6 +57,8 @@ export default function App() {
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
+  const [wasteValues, setWasteValues] = useState<{ [key: string]: number | '' }>({});
+
   const { toasts, showToast, dismissToast } = useToast();
   const { session, isSessionActive, startSession, endSession, addChange } = useCountingSession();
 
@@ -1217,6 +1219,8 @@ export default function App() {
 
       const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
 
+      const wasteValue = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] : 0;
+
       const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
 
       const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
@@ -1373,6 +1377,11 @@ export default function App() {
 
 
 
+        // Calculate waste cost (wasteValue * cost)
+        const wasteCost = wasteValue > 0 && previousCost !== undefined
+          ? wasteValue * previousCost
+          : undefined;
+
         newChanges.push({
 
           id: item.id,
@@ -1390,6 +1399,10 @@ export default function App() {
           countedValue: countedValue ?? undefined,
 
           addedValue: addedValue as number,
+
+          wasteValue: wasteValue > 0 ? wasteValue : undefined,
+
+          wasteCost,
 
           finalCount: finalCount,
 
@@ -1777,6 +1790,8 @@ export default function App() {
             previousCount: change.previousCount,
             countedValue: change.countedValue,
             addedValue: change.addedValue,
+            wasteValue: change.wasteValue,
+            wasteCost: change.wasteCost,
             finalCount: change.finalCount,
             previousPrice: change.previousPrice,
             newPrice: change.newPrice,
@@ -1790,6 +1805,8 @@ export default function App() {
       setCountedValues({});
 
       setAddedValues({});
+
+      setWasteValues({});
 
       setPriceValues({});
 
@@ -3872,7 +3889,7 @@ export default function App() {
 
                     <div>
 
-                      <p className="text-xs text-muted-foreground mb-1">Eklenen</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t('item.added')}</p>
 
                       <NumpadInput
 
@@ -3888,9 +3905,27 @@ export default function App() {
 
                     </div>
 
+                    <div>
+
+                      <p className="text-xs text-muted-foreground mb-1">{t('item.waste')}</p>
+
+                      <NumpadInput
+
+                        value={wasteValues[item.id] || ''}
+
+                        onChange={(value) => setWasteValues(prev => ({ ...prev, [item.id]: value === '' ? '' : Number(value) }))}
+
+                        placeholder="0"
+
+                        className="text-xs"
+
+                      />
+
+                    </div>
+
                     <div className="text-center">
 
-                      <p className="text-xs text-muted-foreground mb-1">Fark</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t('item.diff')}</p>
 
                       <p className={`px-1 py-1 rounded text-xs ${
 
@@ -4168,7 +4203,25 @@ export default function App() {
 
                     <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground min-w-[50px]">Toplam:</p>
+                      <p className="text-muted-foreground min-w-[40px]">{t('item.waste')}:</p>
+
+                      <NumpadInput
+
+                        value={wasteValues[item.id] || ''}
+
+                        onChange={(value) => setWasteValues(prev => ({ ...prev, [item.id]: value === '' ? '' : Number(value) }))}
+
+                        placeholder="0"
+
+                        className="w-20"
+
+                      />
+
+                    </div>
+
+                    <div className="flex items-center gap-2">
+
+                      <p className="text-muted-foreground min-w-[50px]">{t('item.total')}:</p>
 
                       <p className="bg-primary text-primary-foreground px-2 py-1 rounded min-w-[60px] text-center">
 
@@ -4187,6 +4240,7 @@ export default function App() {
                   const hasChanges =
                     (countedValues[item.id] !== undefined && countedValues[item.id] !== '') ||
                     (addedValues[item.id] !== undefined && addedValues[item.id] !== 0 && addedValues[item.id] !== '') ||
+                    (wasteValues[item.id] !== undefined && wasteValues[item.id] !== 0 && wasteValues[item.id] !== '') ||
                     (priceValues[item.id] !== undefined && priceValues[item.id] !== '') ||
                     (costValues[item.id] !== undefined && costValues[item.id] !== '') ||
                     (barcodeValues[item.id] !== undefined && barcodeValues[item.id] !== item.barcode);
@@ -4223,19 +4277,25 @@ export default function App() {
                             delete newValues[item.id];
                             return newValues;
                           });
+                          setWasteValues(prev => {
+                            const newValues = { ...prev };
+                            delete newValues[item.id];
+                            return newValues;
+                          });
                         }}
                         variant="outline"
                         size="sm"
                         className="flex-1"
                       >
                         <Undo2 className="h-4 w-4 mr-1" />
-                        Geri Al
+                        {t('controls.undo')}
                       </Button>
                       <Button
                         onClick={async () => {
                           // Apply changes for this single item
                           const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
                           const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+                          const wasteValue = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] : 0;
                           const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
                           const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
                           const pendingBarcode = barcodeValues[item.id] || null;
@@ -4278,6 +4338,10 @@ export default function App() {
 
                             // Add to counting session if active
                             if (isSessionActive) {
+                              const wasteCost = wasteValue > 0 && previousCost !== undefined
+                                ? wasteValue * previousCost
+                                : undefined;
+
                               addChange({
                                 productId: item.id,
                                 productName: item.name,
@@ -4285,6 +4349,8 @@ export default function App() {
                                 previousCount: item.count,
                                 countedValue: countedValue ?? undefined,
                                 addedValue: addedValue as number,
+                                wasteValue: wasteValue > 0 ? wasteValue : undefined,
+                                wasteCost,
                                 finalCount: finalCount,
                                 previousPrice,
                                 newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
@@ -4330,6 +4396,11 @@ export default function App() {
                               return newValues;
                             });
                             setBarcodeValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[item.id];
+                              return newValues;
+                            });
+                            setWasteValues(prev => {
                               const newValues = { ...prev };
                               delete newValues[item.id];
                               return newValues;

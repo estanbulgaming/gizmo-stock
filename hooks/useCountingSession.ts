@@ -7,6 +7,8 @@ export interface CountingSessionChange {
   previousCount: number;
   countedValue?: number;
   addedValue?: number;
+  wasteValue?: number;
+  wasteCost?: number;
   finalCount: number;
   previousPrice?: number;
   newPrice?: number;
@@ -108,6 +110,8 @@ export function generateSessionReport(session: CountingSession, t: (key: string)
     t('csv.current'),
     t('csv.counted'),
     t('csv.added'),
+    t('csv.waste'),
+    t('csv.wasteCost'),
     t('csv.total'),
     t('csv.oldPrice'),
     t('csv.newPrice'),
@@ -120,6 +124,8 @@ export function generateSessionReport(session: CountingSession, t: (key: string)
     change.previousCount.toString(),
     change.countedValue?.toString() || '',
     change.addedValue?.toString() || '',
+    change.wasteValue?.toString() || '',
+    change.wasteCost?.toFixed(2) || '',
     change.finalCount.toString(),
     change.previousPrice?.toFixed(2) || '',
     change.newPrice?.toFixed(2) || '',

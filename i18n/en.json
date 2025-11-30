@@ -46,6 +46,7 @@
   "item.oldPrice": "Old Price",
   "item.newPrice": "New Price",
   "item.priceDiff": "Price Diff",
+  "item.waste": "Waste",
 
   "empty.hint": "Use Fetch Products to view your stock list",
 
@@ -108,6 +109,8 @@
   "csv.oldPrice": "Old Price",
   "csv.newPrice": "New Price",
   "csv.priceDiff": "Price Diff",
+  "csv.waste": "Waste",
+  "csv.wasteCost": "Waste Cost",
   "csv.actionType": "Action Type",
   "csv.date": "Date",
 
