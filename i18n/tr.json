@@ -35,5 +35,15 @@
   "item.diff": "Fark",
   "item.total": "Toplam",
 
-  "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz"
+  "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz",
+
+  "settings.language": "Dil",
+  "settings.language.description": "Uygulama dilini seçin",
+
+  "login.title": "Giriş Yap",
+  "login.username": "Kullanıcı Adı",
+  "login.password": "Şifre",
+  "login.serverIP": "Sunucu IP Adresi",
+  "login.submit": "Giriş",
+  "login.error.required": "Lütfen tüm alanları doldurun"
 }

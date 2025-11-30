@@ -16,9 +16,9 @@ export interface ApiConfig {
 export const API_CONFIG_STORAGE_KEY = 'apiConfig';
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
-  serverIP: '192.168.1.5',
-  username: 'cenx',
-  password: '123',
+  serverIP: '',
+  username: '',
+  password: '',
   endpoint: '/v2.0/products',
   groupsEndpoint: '/v2.0/productgroups',
   paginationLimit: 500,

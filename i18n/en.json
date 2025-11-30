@@ -1,0 +1,49 @@
+{
+  "app.title": "Stock Management System",
+  "app.subtitle": "Manage your inventory locally",
+
+  "nav.stock": "Stock Management",
+  "nav.history": "Count History",
+  "nav.settings": "Settings",
+
+  "controls.title": "Actions",
+  "controls.fetch": "Fetch Products",
+  "controls.apply": "Apply Changes",
+  "controls.apply.short": "Apply",
+  "controls.updating": "Updating...",
+  "controls.loading": "Loading...",
+
+  "progress.updating": "Updating stock...",
+  "progress.fetching": "Loading stock...",
+
+  "list.title": "Stock Items",
+  "list.search.placeholder": "Search by product name or barcode...",
+
+  "danger.title": "Dangerous Actions",
+
+  "reset.none": "No products matching the filter.",
+  "reset.done": "{count} products matching the filter have been counted as 0.\n\nYou can update stock to 0 with \"Apply Changes\".",
+
+  "filter.showAll": "Show All",
+  "filter.category": "Category",
+
+  "item.product": "Product",
+  "item.barcode": "Barcode",
+  "item.current": "Current",
+  "item.counted": "Counted",
+  "item.added": "Added",
+  "item.diff": "Diff",
+  "item.total": "Total",
+
+  "empty.hint": "Use Fetch Products to view your stock list",
+
+  "settings.language": "Language",
+  "settings.language.description": "Select the application language",
+
+  "login.title": "Login",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.serverIP": "Server IP Address",
+  "login.submit": "Login",
+  "login.error.required": "Please fill in all fields"
+}

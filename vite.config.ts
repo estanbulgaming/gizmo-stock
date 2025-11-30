@@ -5,7 +5,8 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiTarget = env.VITE_API_PROXY_TARGET || "http://192.168.1.5";
+  // API proxy target - set VITE_API_PROXY_TARGET in .env file
+  const apiTarget = env.VITE_API_PROXY_TARGET || "";
 
   return {
     plugins: [react()],

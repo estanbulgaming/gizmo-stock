@@ -23,7 +23,7 @@ import { Progress } from './components/ui/progress';
 
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 
-import { t } from './i18n';
+import { t, getLang, setLang, availableLanguages, languageNames, Lang } from './i18n';
 
 import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
 
@@ -49,9 +49,9 @@ export default function App() {
 
   const [costValues, setCostValues] = useState<{ [key: string]: number | '' }>({});
 
-  const [previousCostValues, setPreviousCostValues] = useState<{ [key: string]: number | '' }>({});
+  const [previousCostValues, _setPreviousCostValues] = useState<{ [key: string]: number | '' }>({});
 
-  const [nextCostValues, setNextCostValues] = useState<{ [key: string]: number | '' }>({});
+  const [nextCostValues, _setNextCostValues] = useState<{ [key: string]: number | '' }>({});
 
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
@@ -70,6 +70,9 @@ export default function App() {
   // API Configuration states
 
   const [apiConfig, setApiConfig] = useApiConfig(DEFAULT_API_CONFIG);
+
+  // Language state - triggers re-render when language changes
+  const [currentLanguage, setCurrentLanguage] = useState<Lang>(getLang());
 
 
   // Use relative base path so dev (Vite) and prod (Nginx) proxies handle CORS
@@ -292,46 +295,6 @@ export default function App() {
   };
 
 
-
-  const handlePriceInputChange = (id: string, inputValue: string) => {
-
-    const normalized = inputValue.replace(',', '.').trim();
-
-    if (normalized === '') {
-
-      setPriceValues(prev => ({
-
-        ...prev,
-
-        [id]: ''
-
-      }));
-
-      return;
-
-    }
-
-
-
-    const parsed = Number(normalized);
-
-    if (!Number.isFinite(parsed)) {
-
-      return;
-
-    }
-
-
-
-    setPriceValues(prev => ({
-
-      ...prev,
-
-      [id]: parsed
-
-    }));
-
-  };
 
   const handlePriceChange = (id: string, value: number | '') => {
 
@@ -3432,6 +3395,30 @@ Lutfen tekrar deneyin.`);
 
 
 
+        {/* Language Selection */}
+        <Card className="p-6">
+          <h3 className="mb-4">{t('settings.language')}</h3>
+          <p className="text-muted-foreground text-sm mb-4">{t('settings.language.description')}</p>
+          <Select
+            value={currentLanguage}
+            onValueChange={(value: Lang) => {
+              setLang(value);
+              setCurrentLanguage(value);
+            }}
+          >
+            <SelectTrigger className="w-full md:w-64">
+              <SelectValue placeholder={t('settings.language')} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableLanguages.map((lang) => (
+                <SelectItem key={lang} value={lang}>
+                  {languageNames[lang]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
+
         {/* API Configuration */}
 
         <Card className="p-6">
@@ -4206,6 +4193,60 @@ Lutfen tekrar deneyin.`);
 
 
 
+  // Check if login is required
+  const isLoggedIn = apiConfig.serverIP && apiConfig.username && apiConfig.password;
+
+  // Login screen
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="login-username" className="text-gray-700">{t('login.username')}</Label>
+              <Input
+                id="login-username"
+                type="text"
+                value={apiConfig.username}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, username: e.target.value }))}
+                className="mt-1"
+                placeholder={t('login.username')}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="login-password" className="text-gray-700">{t('login.password')}</Label>
+              <Input
+                id="login-password"
+                type="password"
+                value={apiConfig.password}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, password: e.target.value }))}
+                className="mt-1"
+                placeholder={t('login.password')}
+              />
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label htmlFor="login-serverip" className="text-gray-700">{t('login.serverIP')}</Label>
+              <Input
+                id="login-serverip"
+                type="text"
+                value={apiConfig.serverIP}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, serverIP: e.target.value }))}
+                className="mt-1"
+                placeholder="192.168.1.5"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
     <div className="min-h-screen bg-background p-3 sm:p-6">
@@ -4650,7 +4691,7 @@ Lutfen tekrar deneyin.`);
 
               const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
 
-              const priceDiff = enteredPrice !== null && currentPrice !== null
+              const _priceDiff = enteredPrice !== null && currentPrice !== null
 
                 ? enteredPrice - currentPrice
 
@@ -4670,11 +4711,11 @@ Lutfen tekrar deneyin.`);
 
               const enteredPreviousCost = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] : null;
 
-              const previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
+              const _previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
 
               const enteredNextCost = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] : null;
 
-              const nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
+              const _nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
 
               return (
 
