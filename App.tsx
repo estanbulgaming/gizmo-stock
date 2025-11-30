@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 import { Checkbox } from './components/ui/checkbox';
 
-import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check, ChevronDown } from 'lucide-react';
+import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check, ChevronDown, RotateCcw } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -31,7 +31,7 @@ import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, deleteProduct, restoreProduct, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
 
 
 
@@ -1178,7 +1178,11 @@ export default function App() {
 
     try {
       // Always fetch fresh data from API (stock counts must be current)
-      const { products, totalProducts, totalStock } = await fetchProductsService({ apiConfig, joinApi });
+      // Pass selected product groups to filter on server-side
+      const { products, totalProducts, totalStock } = await fetchProductsService(
+        { apiConfig, joinApi },
+        selectedProductGroups.length > 0 ? selectedProductGroups : undefined
+      );
       setStockData(products);
       setCountedValues({});
       setAddedValues({});
@@ -3671,7 +3675,57 @@ export default function App() {
 
               return (
 
-              <div key={item.id} className="bg-card border rounded-lg p-3 sm:p-4">
+              <div key={item.id} className={`bg-card border rounded-lg p-3 sm:p-4 ${item.isDeleted ? 'opacity-60 border-dashed' : ''}`}>
+
+                {/* Delete/Restore Button */}
+                <div className="flex justify-end mb-2">
+                  {item.isDeleted ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={async () => {
+                        try {
+                          await restoreProduct({ apiConfig, joinApi }, item.id);
+                          setStockData(prev => prev.map(p =>
+                            p.id === item.id ? { ...p, isDeleted: false } : p
+                          ));
+                          addLog('success', 'RESTORE', `Ürün geri alındı: ${item.name}`);
+                          showToast('success', `${item.name} geri alındı`);
+                        } catch (error) {
+                          addLog('error', 'RESTORE', `Geri alma hatası: ${item.name}`, error);
+                          showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
+                        }
+                      }}
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      {t('controls.restore')}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={async () => {
+                        if (!confirm(t('confirm.deleteProduct', { name: item.name }))) return;
+                        try {
+                          await deleteProduct({ apiConfig, joinApi }, item.id);
+                          setStockData(prev => prev.map(p =>
+                            p.id === item.id ? { ...p, isDeleted: true } : p
+                          ));
+                          addLog('success', 'DELETE', `Ürün silindi: ${item.name}`);
+                          showToast('success', `${item.name} silindi`);
+                        } catch (error) {
+                          addLog('error', 'DELETE', `Silme hatası: ${item.name}`, error);
+                          showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      {t('controls.delete')}
+                    </Button>
+                  )}
+                </div>
 
                 {/* Mobile Layout */}
 

@@ -15,6 +15,8 @@
   "controls.updating": "Обновление...",
   "controls.loading": "Загрузка...",
   "controls.undo": "Отменить",
+  "controls.delete": "Удалить",
+  "controls.restore": "Восстановить",
 
   "progress.updating": "Обновление запасов...",
   "progress.fetching": "Загрузка запасов...",
@@ -130,6 +132,7 @@
   "success.updateComplete": "Все обновления успешно завершены!",
 
   "confirm.applyChanges": "Вы уверены, что хотите применить следующие изменения?\n\n{details}\n\nЭто действие нельзя отменить.",
+  "confirm.deleteProduct": "Вы уверены, что хотите удалить {name}?",
 
   "item.new": "Новый",
   "ui.tapToClose": "Нажмите, чтобы закрыть"

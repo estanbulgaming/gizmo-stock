@@ -74,9 +74,15 @@ export const fetchProductGroups = async ({ apiConfig, joinApi }: ApiContext): Pr
   return groups;
 };
 
-export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise<FetchProductsResult> => {
+export const fetchProducts = async (
+  { apiConfig, joinApi }: ApiContext,
+  productGroupIds?: number[]
+): Promise<FetchProductsResult> => {
   const deletedParam = apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false';
-  const url = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}`;
+  const groupParams = productGroupIds && productGroupIds.length > 0
+    ? productGroupIds.map(id => `ProductGroupId=${id}`).join('&')
+    : '';
+  const url = `${joinApi(apiConfig.endpoint)}?${deletedParam}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}${groupParams ? '&' + groupParams : ''}`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -130,6 +136,7 @@ export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise
       nextCost: priceTracking.nextCost,
       productGroupId:
         productGroupIdValue == null ? undefined : parseNumber(productGroupIdValue, 0),
+      isDeleted: Boolean(entry['isDeleted']),
     });
   }
 
@@ -141,6 +148,36 @@ export const fetchProducts = async ({ apiConfig, joinApi }: ApiContext): Promise
     totalProducts,
     totalStock,
   };
+};
+
+export const deleteProduct = async (
+  { apiConfig, joinApi }: ApiContext,
+  productId: string
+): Promise<void> => {
+  const url = `${joinApi(`/v2.0/products/${productId}`)}?id=${productId}`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: authHeader(apiConfig),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+};
+
+export const restoreProduct = async (
+  { apiConfig, joinApi }: ApiContext,
+  productId: string
+): Promise<void> => {
+  const url = `${joinApi(`/v2.0/products/${productId}/undelete`)}?id=${productId}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: authHeader(apiConfig),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 };
 
 export const fetchProductImageUrl = async (
