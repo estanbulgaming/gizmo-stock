@@ -1579,7 +1579,22 @@ export default function App() {
 
 
 
+    // Check if there are any counted values entered (even if no actual change)
+    const hasCountedEntries = Object.keys(countedValues).some(id =>
+      countedValues[id] !== '' && countedValues[id] !== undefined
+    );
+
     if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0 && barcodeUpdates.length === 0 && nameUpdates.length === 0) {
+      // In counting session, mark products as counted even if no actual changes
+      if (isSessionActive && hasCountedEntries) {
+        const countedIds = Object.keys(countedValues).filter(id =>
+          countedValues[id] !== '' && countedValues[id] !== undefined
+        );
+        setCountedProductIds(prev => new Set([...prev, ...countedIds]));
+        setCountedValues({});
+        showToast('success', `${countedIds.length} ürün sayıldı olarak işaretlendi`);
+        return;
+      }
 
       showToast('warning', t('errors.noChanges'));
 
@@ -1986,8 +2001,13 @@ export default function App() {
       }
 
       // Mark products as counted if session is active
+      // Include all products that had a counted value entered, even if no change
       if (isSessionActive) {
+        const countedIds = Object.keys(countedValues).filter(id =>
+          countedValues[id] !== '' && countedValues[id] !== undefined
+        );
         const updatedProductIds = new Set([
+          ...countedIds,
           ...stockUpdates.map(u => u.productId),
           ...priceUpdates.map(u => u.productId),
           ...costUpdates.map(u => u.productId),
@@ -4139,7 +4159,7 @@ export default function App() {
 
                       <NumpadInput
 
-                        value={countedValues[item.id] || ''}
+                        value={countedValues[item.id] ?? ''}
 
                         onChange={(value) => handleCountedChange(item.id, value)}
 
@@ -4417,7 +4437,7 @@ export default function App() {
 
                       <NumpadInput
 
-                        value={countedValues[item.id] || ''}
+                        value={countedValues[item.id] ?? ''}
 
                         onChange={(value) => handleCountedChange(item.id, value)}
 
