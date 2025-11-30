@@ -75,18 +75,13 @@ export default function App() {
   const [currentLanguage, setCurrentLanguage] = useState<Lang>(getLang());
 
 
-  // Use relative base path so dev (Vite) and prod (Nginx) proxies handle CORS
-
-  const apiBase = '/api';
+  // Build API base URL from serverIP
+  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}` : '';
 
   const joinApi = (path: string) => {
-
     let p = (path || '').trim();
-
     if (!p.startsWith('/')) p = '/' + p;
-
-    return p.startsWith('/api/') ? p : `${apiBase}${p}`;
-
+    return `${apiBase}${p}`;
   };
 
 
