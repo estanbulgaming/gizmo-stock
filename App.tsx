@@ -31,7 +31,7 @@ import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
 
 
 
@@ -86,8 +86,80 @@ export default function App() {
 
 
 
-  // Images are now loaded with the product list (base64 in productImages field)
-  // No separate API calls needed
+  // Queue-based image loading to prevent ERR_INSUFFICIENT_RESOURCES
+  const [imageLoadingQueue, setImageLoadingQueue] = useState<string[]>([]);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  // Process image loading queue - one image at a time with delay
+  useEffect(() => {
+    if (!apiConfig.showProductImages || imageLoadingQueue.length === 0) return;
+
+    const productId = imageLoadingQueue[0];
+    if (loadedImages.has(productId)) {
+      setImageLoadingQueue(prev => prev.slice(1));
+      return;
+    }
+
+    const loadImage = async () => {
+      // Check cache first
+      const cachedUrl = getCachedImageUrl(productId);
+      if (cachedUrl) {
+        setStockData(prev => prev.map(item =>
+          item.id === productId ? { ...item, imageUrl: cachedUrl } : item
+        ));
+        setLoadedImages(prev => new Set(prev).add(productId));
+        setImageLoadingQueue(prev => prev.slice(1));
+        return;
+      }
+
+      const product = stockData.find(p => p.id === productId);
+      if (!product) {
+        setImageLoadingQueue(prev => prev.slice(1));
+        return;
+      }
+
+      try {
+        const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, productId, product);
+        if (imageUrl) {
+          setCachedImageUrl(productId, imageUrl);
+          setStockData(prev => prev.map(item =>
+            item.id === productId ? { ...item, imageUrl } : item
+          ));
+        }
+      } catch {
+        // Silent fail
+      }
+
+      setLoadedImages(prev => new Set(prev).add(productId));
+      // Wait before next image
+      setTimeout(() => {
+        setImageLoadingQueue(prev => prev.slice(1));
+      }, 300);
+    };
+
+    loadImage();
+  }, [imageLoadingQueue, apiConfig.showProductImages, apiConfig, joinApi, stockData, loadedImages]);
+
+  // Queue first 10 images when products load
+  useEffect(() => {
+    if (!apiConfig.showProductImages || stockData.length === 0) return;
+
+    const idsToLoad = stockData
+      .filter(p => !p.imageUrl && !loadedImages.has(p.id))
+      .slice(0, 10)
+      .map(p => p.id);
+
+    if (idsToLoad.length > 0) {
+      setImageLoadingQueue(idsToLoad);
+    }
+  }, [stockData, apiConfig.showProductImages, loadedImages]);
+
+  // Load a single product image on demand (when user clicks "Show" button)
+  const loadProductImage = useCallback((productId: string) => {
+    if (!loadedImages.has(productId) && !imageLoadingQueue.includes(productId)) {
+      setImageLoadingQueue(prev => [...prev, productId]);
+    }
+  }, [loadedImages, imageLoadingQueue]);
 
   const [showPassword, setShowPassword] = useState(false);
 
