@@ -177,6 +177,87 @@ export const fetchProductImageUrl = async (
   );
 };
 
+// Image cache localStorage functions
+const IMAGE_CACHE_KEY = 'gizmo_image_cache';
+const IMAGE_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
+interface ImageCache {
+  [productId: string]: {
+    url: string;
+    timestamp: number;
+  };
+}
+
+const loadImageCache = (): ImageCache => {
+  try {
+    const stored = localStorage.getItem(IMAGE_CACHE_KEY);
+    if (!stored) return {};
+    return JSON.parse(stored) as ImageCache;
+  } catch {
+    return {};
+  }
+};
+
+const saveImageCache = (cache: ImageCache): void => {
+  try {
+    localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Silently fail
+  }
+};
+
+export const getCachedImageUrl = (productId: string): string | undefined => {
+  const cache = loadImageCache();
+  const entry = cache[productId];
+  if (!entry) return undefined;
+
+  // Check if cache is expired
+  if (Date.now() - entry.timestamp > IMAGE_CACHE_EXPIRY) {
+    return undefined;
+  }
+  return entry.url;
+};
+
+export const setCachedImageUrl = (productId: string, url: string): void => {
+  const cache = loadImageCache();
+  cache[productId] = { url, timestamp: Date.now() };
+  saveImageCache(cache);
+};
+
+// Product list cache localStorage functions
+const PRODUCTS_CACHE_KEY = 'gizmo_products_cache';
+const PRODUCTS_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+interface ProductsCache {
+  products: StockData[];
+  timestamp: number;
+}
+
+export const getCachedProducts = (): StockData[] | null => {
+  try {
+    const stored = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (!stored) return null;
+    const cache = JSON.parse(stored) as ProductsCache;
+
+    // Check if cache is expired
+    if (Date.now() - cache.timestamp > PRODUCTS_CACHE_EXPIRY) {
+      return null;
+    }
+    return cache.products;
+  } catch {
+    return null;
+  }
+};
+
+export const setCachedProducts = (products: StockData[]): void => {
+  try {
+    const cache: ProductsCache = { products, timestamp: Date.now() };
+    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Silently fail
+  }
+};
+
 // Price tracking localStorage functions
 const PRICE_TRACKING_KEY = 'gizmo_price_tracking';
 
