@@ -117,6 +117,8 @@
   "login.serverIP": "Sunucu IP Adresi",
   "login.submit": "Giriş",
   "login.error.required": "Lütfen tüm alanları doldurun",
+  "login.error.credentials": "Kullanıcı adı veya şifre hatalı",
+  "login.error.connection": "Sunucuya bağlanılamadı",
 
   "errors.noChanges": "Güncellenecek stok, fiyat, maliyet veya barkod değişikliği bulunamadı!",
   "errors.updateFailed": "Güncelleme sırasında kritik hata oluştu!\n\nDetay: {error}\n\nLütfen tekrar deneyin.",
