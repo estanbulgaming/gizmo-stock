@@ -61,10 +61,29 @@ export default function App() {
 
   const [wasteValues, setWasteValues] = useState<{ [key: string]: number | '' }>({});
 
-  const [countedProductIds, setCountedProductIds] = useState<Set<string>>(new Set());
+  const [countedProductIds, setCountedProductIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('gizmo-counted-product-ids');
+      if (stored) {
+        return new Set(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return new Set();
+  });
 
   const { toasts, showToast, dismissToast } = useToast();
   const { session, isSessionActive, startSession, endSession, addChange } = useCountingSession();
+
+  // Save countedProductIds to localStorage
+  useEffect(() => {
+    if (isSessionActive && countedProductIds.size > 0) {
+      localStorage.setItem('gizmo-counted-product-ids', JSON.stringify([...countedProductIds]));
+    } else if (!isSessionActive) {
+      localStorage.removeItem('gizmo-counted-product-ids');
+    }
+  }, [countedProductIds, isSessionActive]);
 
   const [currentPage, setCurrentPage] = useState<'stock' | 'counting' | 'settings'>('stock');
 
