@@ -76,7 +76,7 @@ export default function App() {
 
 
   // Build API base URL from serverIP
-  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}` : '';
+  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}/api` : '';
 
   const joinApi = (path: string) => {
     let p = (path || '').trim();
@@ -3148,7 +3148,7 @@ export default function App() {
     setLoginError(null);
 
     try {
-      const testUrl = `http://${apiConfig.serverIP}${apiConfig.groupsEndpoint}`;
+      const testUrl = `http://${apiConfig.serverIP}/api${apiConfig.groupsEndpoint}`;
       const response = await fetch(testUrl, {
         method: 'GET',
         headers: {
