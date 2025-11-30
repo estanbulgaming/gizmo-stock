@@ -27,6 +27,8 @@ import { t, getLang, setLang, availableLanguages, languageNames, Lang } from './
 
 import { DEFAULT_API_CONFIG, useApiConfig } from './hooks/useApiConfig';
 import { useStockHistory } from './hooks/useStockHistory';
+import { useToast } from './hooks/useToast';
+import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { DailyReport, ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
@@ -57,6 +59,7 @@ export default function App() {
   const [barcodeValues, setBarcodeValues] = useState<{ [key: string]: string }>({});
 
   const { stockChanges, addChanges: addStockChanges, clearHistory: clearStockHistory } = useStockHistory();
+  const { toasts, showToast, dismissToast } = useToast();
 
   const [currentPage, setCurrentPage] = useState<'stock' | 'history' | 'settings'>('stock');
 
@@ -1187,11 +1190,7 @@ export default function App() {
       addLog('success', 'GROUPS_API', `${groups.length} kategori yüklendi`, { groups: groups.map(g => g.name) });
     } catch (error) {
       addLog('error', 'GROUPS_API', 'Kategoriler yüklenirken hata', error);
-      let errorMessage = 'Ürün kategorileri yüklenirken hata oluştu!';
-      if (error instanceof Error) {
-        errorMessage += `\n\nDetay: ${error.message}`;
-      }
-      alert(errorMessage);
+      showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 
@@ -1234,11 +1233,7 @@ export default function App() {
       }
     } catch (error) {
       addLog('error', 'PRODUCTS_API', 'Ürünler yüklenirken hata', error);
-      let errorMessage = 'Ürünler yüklenirken hata oluştu!';
-      if (error instanceof Error) {
-        errorMessage += `\n\nDetay: ${error.message}`;
-      }
-      alert(errorMessage);
+      showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
     } finally {
       setIsLoadingProducts(false);
     }
@@ -1482,7 +1477,7 @@ export default function App() {
 
     if (stockUpdates.length === 0 && priceUpdates.length === 0 && costUpdates.length === 0 && barcodeUpdates.length === 0) {
 
-      alert('Guncellenecek stok, fiyat, maliyet veya barkod degisikligi bulunamadi!');
+      showToast('warning', t('errors.noChanges'));
 
       return;
 
@@ -1518,23 +1513,10 @@ export default function App() {
 
 
 
-    const confirmMessageLines: string[] = [
+    const totalUpdates = stockUpdates.length + priceUpdates.length + costUpdates.length + barcodeUpdates.length;
+    const details = summaryParts.join('\n');
 
-      `Toplam ${stockUpdates.length + priceUpdates.length + costUpdates.length + barcodeUpdates.length} guncelleme uygulanacak.`
-
-    ];
-
-    if (summaryParts.length > 0) {
-
-      confirmMessageLines.push(summaryParts.join('\n'));
-
-    }
-
-    confirmMessageLines.push('Isleme devam etmek istiyor musunuz?');
-
-
-
-    if (!confirm(confirmMessageLines.join('\n\n'))) {
+    if (!confirm(t('confirm.applyChanges', { details: `${totalUpdates} updates\n${details}` }))) {
 
       return;
 
@@ -1818,37 +1800,11 @@ export default function App() {
 
         }
 
-        alert(`Guncelleme tamamlandi fakat bazi kayitlar basarisiz oldu.\n\n${failureLines.join('\n')}`);
+        showToast('warning', t('errors.partialFail') + '\n' + failureLines.join('\n'));
 
       } else {
 
-        const successLines: string[] = [];
-
-        if (stockUpdates.length > 0) {
-
-          successLines.push(`${successfulStock.length} stok guncellemesi`);
-
-        }
-
-        if (priceUpdates.length > 0) {
-
-          successLines.push(`${successfulPrice.length} fiyat guncellemesi`);
-
-        }
-
-        if (costUpdates.length > 0) {
-
-          successLines.push(`${successfulCost.length} maliyet guncellemesi`);
-
-        }
-
-        if (barcodeUpdates.length > 0) {
-
-          successLines.push(`${successfulBarcode.length} barkod guncellemesi`);
-
-        }
-
-        alert(`Tum guncellemeler basariyla tamamlandi!\n\n${successLines.join('\n')}`);
+        showToast('success', t('success.updateComplete'));
 
       }
 
@@ -1882,15 +1838,7 @@ export default function App() {
 
       }
 
-      alert(`Guncelleme sirasinda kritik hata olustu!
-
-
-
-Detay: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}
-
-
-
-Lutfen tekrar deneyin.`);
+      showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
 
     }
 
@@ -1910,7 +1858,7 @@ Lutfen tekrar deneyin.`);
 
     if (filtered.length === 0) {
 
-      alert('Filtreye uyan ürün bulunamadı.');
+      showToast('warning', t('reset.none'));
 
       return;
 
@@ -1956,7 +1904,7 @@ Lutfen tekrar deneyin.`);
 
     });
 
-    alert(`Filtreye uyan ${filtered.length} ürün 0 olarak sayıldı.\n\n"Değişiklikleri Uygula" ile stokları 0'a güncelleyebilirsiniz.`);
+    showToast('success', t('reset.done', { count: filtered.length }));
 
   };
 
@@ -2392,7 +2340,7 @@ Lutfen tekrar deneyin.`);
 
 
 
-    const headers = ['Urun Adi', 'Mevcut', 'Sayim', 'Eklenen', 'Fark (Sayim)', 'Toplam', 'Eski Fiyat', 'Yeni Fiyat', 'Fiyat Farki', 'Islem Turu', 'Tarih'];
+    const headers = [t('csv.productName'), t('csv.current'), t('csv.counted'), t('csv.added'), t('csv.diffCounted'), t('csv.total'), t('csv.oldPrice'), t('csv.newPrice'), t('csv.priceDiff'), t('csv.actionType'), t('csv.date')];
 
 
 
@@ -2624,7 +2572,7 @@ Lutfen tekrar deneyin.`);
 
         <div>
 
-          <h2>Stok Sayım Geçmişi</h2>
+          <h2>{t('history.title')}</h2>
 
           <p className="text-muted-foreground">Günlük stok değişikliklerini görüntüleyin (← → tuşları ile navigasyon)</p>
 
@@ -2736,9 +2684,9 @@ Lutfen tekrar deneyin.`);
 
                             <div className="text-right">
 
-                              <p className="text-sm">Sayılan: {report.totalCounted}</p>
+                              <p className="text-sm">{t('item.counted')}: {report.totalCounted}</p>
 
-                              <p className="text-sm">Eklenen: {report.totalAdded}</p>
+                              <p className="text-sm">{t('item.added')}: {report.totalAdded}</p>
 
                             </div>
 
@@ -3088,7 +3036,7 @@ Lutfen tekrar deneyin.`);
 
                             <div className="text-center">
 
-                              <p className="text-muted-foreground">Eski Fiyat</p>
+                              <p className="text-muted-foreground">{t('item.oldPrice')}</p>
 
                               <p className="font-medium">{formatPrice(change.previousPrice ?? null)}</p>
 
@@ -3096,7 +3044,7 @@ Lutfen tekrar deneyin.`);
 
                             <div className="text-center">
 
-                              <p className="text-muted-foreground">Yeni Fiyat</p>
+                              <p className="text-muted-foreground">{t('item.newPrice')}</p>
 
                               <p className="font-medium">{formatPrice(change.newPrice ?? null)}</p>
 
@@ -3200,11 +3148,11 @@ Lutfen tekrar deneyin.`);
 
                       <div>
 
-                        Mevcut: {change.previousCount} ? Son: {change.finalCount}
+                        {t('history.current')}: {change.previousCount} → {t('history.final')}: {change.finalCount}
 
-                        {change.countedValue !== undefined && ` (Sayim: ${change.countedValue})`}
+                        {change.countedValue !== undefined && ` (${t('history.countValue')}: ${change.countedValue})`}
 
-                        {change.addedValue ? ` (Eklenen: ${change.addedValue})` : ''}
+                        {change.addedValue ? ` (${t('item.added')}: ${change.addedValue})` : ''}
 
                       </div>
 
@@ -3346,7 +3294,7 @@ Lutfen tekrar deneyin.`);
 
     const clearLogs = () => {
 
-      if (confirm('Tüm logları temizlemek istediğinizden emin misiniz?')) {
+      if (confirm(t('settings.logs.clear.confirm'))) {
 
         setSystemLogs([]);
 
@@ -3388,9 +3336,9 @@ Lutfen tekrar deneyin.`);
 
         <div>
 
-          <h2>Sistem Ayarları</h2>
+          <h2>{t('settings.title')}</h2>
 
-          <p className="text-muted-foreground">API bağlantı ayarlarını ve sistem parametrelerini yapılandırın</p>
+          <p className="text-muted-foreground">{t('settings.description')}</p>
 
         </div>
 
@@ -3424,7 +3372,7 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-6">
 
-          <h3 className="mb-4">API Bağlantı Ayarları</h3>
+          <h3 className="mb-4">{t('settings.api.title')}</h3>
 
           <div className="space-y-4">
 
@@ -3432,7 +3380,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="serverIP">Sunucu IP Adresi</Label>
+                <Label htmlFor="serverIP">{t('settings.api.serverIP')}</Label>
 
                 <Input
 
@@ -3450,7 +3398,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="endpoint">API Endpoint</Label>
+                <Label htmlFor="endpoint">{t('settings.api.endpoint')}</Label>
 
                 <Input
 
@@ -3474,7 +3422,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="username">Kullanıcı Adı</Label>
+                <Label htmlFor="username">{t('settings.api.username')}</Label>
 
                 <Input
 
@@ -3492,7 +3440,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="password">Şifre</Label>
+                <Label htmlFor="password">{t('settings.api.password')}</Label>
 
                 <div className="relative">
 
@@ -3540,7 +3488,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <Label htmlFor="paginationLimit">Sayfa Başı Ürün Sayısı</Label>
+              <Label htmlFor="paginationLimit">{t('settings.api.paginationLimit')}</Label>
 
               <Select
 
@@ -3594,7 +3542,7 @@ Lutfen tekrar deneyin.`);
 
                 <Label htmlFor="includeDeleted">
 
-                  Silinmiş Ürünler
+                  {t('settings.api.includeDeleted')}
 
                 </Label>
 
@@ -3620,7 +3568,7 @@ Lutfen tekrar deneyin.`);
 
                 <Label htmlFor="showProductImages">
 
-                  Ürün Fotoğraflarını Göster
+                  {t('settings.api.showImages')}
 
                 </Label>
 
@@ -3632,7 +3580,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label htmlFor="baseParams">Temel Parametreler</Label>
+                <Label htmlFor="baseParams">{t('settings.api.baseParams')}</Label>
 
                 <Input
 
@@ -3662,7 +3610,7 @@ Lutfen tekrar deneyin.`);
 
           <div className="flex items-center justify-between mb-4">
 
-            <h3>Ürün Kategorileri</h3>
+            <h3>{t('settings.categories.title')}</h3>
 
             <Button
 
@@ -3678,7 +3626,7 @@ Lutfen tekrar deneyin.`);
 
               <RefreshCw className="h-4 w-4" />
 
-              Kategorileri Yükle
+              {t('settings.categories.load')}
 
             </Button>
 
@@ -3692,7 +3640,7 @@ Lutfen tekrar deneyin.`);
 
               <div>
 
-                <Label>Stok Sayfasında Gösterilecek Kategoriler</Label>
+                <Label>{t('settings.categories.filter')}</Label>
 
                 <p className="text-sm text-muted-foreground mb-3">
 
@@ -3748,7 +3696,7 @@ Lutfen tekrar deneyin.`);
 
                 <div className="p-3 bg-muted rounded">
 
-                  <p className="text-sm font-medium mb-2">Seçilen Kategoriler:</p>
+                  <p className="text-sm font-medium mb-2">{t('settings.categories.selected')}:</p>
 
                   <div className="flex flex-wrap gap-2">
 
@@ -3782,9 +3730,9 @@ Lutfen tekrar deneyin.`);
 
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
 
-              <p>Kategori bulunamadı</p>
+              <p>{t('settings.categories.notFound')}</p>
 
-              <p className="text-sm mt-2">Kategorileri yüklemek için yukarıdaki butona tıklayın</p>
+              <p className="text-sm mt-2">{t('settings.categories.hint')}</p>
 
             </div>
 
@@ -3798,13 +3746,13 @@ Lutfen tekrar deneyin.`);
 
         <Card className="p-4">
 
-          <h4 className="mb-2">Oluşturulan API URL'leri:</h4>
+          <h4 className="mb-2">{t('settings.urls.title')}:</h4>
 
           <div className="space-y-3">
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Ürünler Listesi (GET):</p>
+              <p className="text-sm font-medium mb-1">{t('settings.urls.products')}:</p>
 
               <div className="flex gap-2">
 
@@ -3828,7 +3776,7 @@ Lutfen tekrar deneyin.`);
 
                 >
 
-                  {apiUrlTests.productsUrl ? 'Gönderiliyor...' : 'Send'}
+                  {apiUrlTests.productsUrl ? t('settings.urls.sending') : t('settings.urls.send')}
 
                 </Button>
 
@@ -3838,7 +3786,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Kategoriler Listesi (GET):</p>
+              <p className="text-sm font-medium mb-1">{t('settings.urls.categories')}:</p>
 
               <div className="flex gap-2">
 
@@ -3862,7 +3810,7 @@ Lutfen tekrar deneyin.`);
 
                 >
 
-                  {apiUrlTests.categoriesUrl ? 'Gönderiliyor...' : 'Send'}
+                  {apiUrlTests.categoriesUrl ? t('settings.urls.sending') : t('settings.urls.send')}
 
                 </Button>
 
@@ -3872,7 +3820,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Stok Güncelleme (POST):</p>
+              <p className="text-sm font-medium mb-1">{t('settings.urls.stockUpdate')}:</p>
 
               <div className="flex gap-2">
 
@@ -3896,7 +3844,7 @@ Lutfen tekrar deneyin.`);
 
                 >
 
-                  {apiUrlTests.stockUpdateUrl ? 'Gönderiliyor...' : 'Send'}
+                  {apiUrlTests.stockUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
 
                 </Button>
 
@@ -3912,7 +3860,7 @@ Lutfen tekrar deneyin.`);
 
             <div>
 
-              <p className="text-sm font-medium mb-1">Fiyat/Maliyet Güncelleme (PUT):</p>
+              <p className="text-sm font-medium mb-1">{t('settings.urls.priceUpdate')}:</p>
 
               <div className="flex gap-2">
 
@@ -3936,7 +3884,7 @@ Lutfen tekrar deneyin.`);
 
                 >
 
-                  {apiUrlTests.priceUpdateUrl ? 'Gönderiliyor...' : 'Send'}
+                  {apiUrlTests.priceUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
 
                 </Button>
 
@@ -3966,7 +3914,7 @@ Lutfen tekrar deneyin.`);
 
               <Terminal className="h-5 w-5" />
 
-              <h3>Sistem Logları</h3>
+              <h3>{t('settings.logs.title')}</h3>
 
             </div>
 
@@ -4162,13 +4110,9 @@ Lutfen tekrar deneyin.`);
 
                 onClick={() => {
 
-                  if (confirm("⚠️ UYARI: Bu işlem geri alınamaz ve bütün stok seviyeleri tamamen 0 olacaktır!\n\nDevam etmek istediğinizden emin misiniz?")) {
+                  if (confirm(t('danger.resetAll.warning'))) {
 
-                    if (confirm("🛑 SON UYARI: Bu işlem GERİ ALINAMAZ!\n\nTüm ürünlerin stok miktarları 0 olacak. Gerçekten devam etmek istiyor musunuz?")) {
-
-                      resetAllToZero();
-
-                    }
+                    resetAllToZero();
 
                   }
 
@@ -4176,7 +4120,7 @@ Lutfen tekrar deneyin.`);
 
               >
 
-                Tüm Stoğu Sıfırla
+                {t('danger.resetAll')}
 
               </Button>
 
@@ -5252,7 +5196,7 @@ Lutfen tekrar deneyin.`);
 
                     <div className="flex items-center gap-2">
 
-                      <p className="text-muted-foreground min-w-[50px]">Eklenen:</p>
+                      <p className="text-muted-foreground min-w-[50px]">{t('item.added')}:</p>
 
                       <NumpadInput
 
@@ -5479,7 +5423,7 @@ Lutfen tekrar deneyin.`);
                             addLog('success', 'APPLY', `Değişiklikler uygulandı: ${item.name}`);
                           } catch (error) {
                             addLog('error', 'APPLY', `Hata: ${item.name} güncellenemedi`, error);
-                            alert(`Guncelleme sirasinda hata olustu!\n\nÜrün: ${item.name}\nDetay: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}\n\nLutfen tekrar deneyin.`);
+                            showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
                           }
                         }}
                         size="sm"
@@ -5619,6 +5563,8 @@ Lutfen tekrar deneyin.`);
           </div>
 
         )}
+
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       </div>
 

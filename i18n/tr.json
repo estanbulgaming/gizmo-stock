@@ -1,9 +1,11 @@
-﻿{
+{
   "app.title": "Stok Yönetim Sistemi",
   "app.subtitle": "Envanterinizi yerel olarak yönetin",
 
   "nav.stock": "Stok Yönetimi",
+  "nav.stockShort": "Stok",
   "nav.history": "Sayım Geçmişi",
+  "nav.historyShort": "Geçmiş",
   "nav.settings": "Ayarlar",
 
   "controls.title": "İşlemler",
@@ -12,6 +14,7 @@
   "controls.apply.short": "Uygula",
   "controls.updating": "Güncelleniyor...",
   "controls.loading": "Yükleniyor...",
+  "controls.undo": "Geri Al",
 
   "progress.updating": "Stok güncelleniyor...",
   "progress.fetching": "Stoklar yükleniyor...",
@@ -20,6 +23,10 @@
   "list.search.placeholder": "Ürün adı veya barkod ile ara...",
 
   "danger.title": "Tehlikeli İşlemler",
+  "danger.resetAll": "Tüm Stoğu Sıfırla",
+  "danger.resetAll.description": "Bu işlem geri alınamaz ve tüm ürünlerin stok miktarlarını sıfırlar.",
+  "danger.resetAll.warning": "⚠️ UYARI: Bu işlem geri alınamaz!\n\nTüm ürünlerin sayım değerlerini 0 olarak işaretleyeceksiniz.\n\nDevam etmek istiyor musunuz?",
+  "danger.resetAll.finalWarning": "🛑 SON UYARI: Bu işlem GERİ ALINAMAZ!\n\nToplam {count} ürünün sayım değeri 0 olarak ayarlanacak.\n\nEmin misiniz?",
 
   "reset.none": "Filtreye uyan ürün bulunamadı.",
   "reset.done": "Filtreye uyan {count} ürün 0 olarak sayıldı.\n\n\"Değişiklikleri Uygula\" ile stokları 0'a güncelleyebilirsiniz.",
@@ -34,16 +41,83 @@
   "item.added": "Eklenen",
   "item.diff": "Fark",
   "item.total": "Toplam",
+  "item.price": "Fiyat",
+  "item.cost": "Maliyet",
+  "item.oldPrice": "Eski Fiyat",
+  "item.newPrice": "Yeni Fiyat",
+  "item.priceDiff": "Fiyat Farkı",
 
   "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz",
 
+  "settings.title": "Sistem Ayarları",
+  "settings.description": "API bağlantı ayarlarını ve sistem parametrelerini yapılandırın",
   "settings.language": "Dil",
   "settings.language.description": "Uygulama dilini seçin",
+
+  "settings.api.title": "API Bağlantı Ayarları",
+  "settings.api.serverIP": "Sunucu IP Adresi",
+  "settings.api.endpoint": "API Endpoint",
+  "settings.api.username": "Kullanıcı Adı",
+  "settings.api.password": "Şifre",
+  "settings.api.paginationLimit": "Sayfa Başı Ürün Sayısı",
+  "settings.api.baseParams": "Temel Parametreler",
+  "settings.api.includeDeleted": "Silinmiş Ürünler",
+  "settings.api.includeDeleted.label": "Silinmiş ürünleri dahil et",
+  "settings.api.showImages": "Ürün Fotoğraflarını Göster",
+
+  "settings.categories.title": "Ürün Kategorileri",
+  "settings.categories.load": "Kategorileri Yükle",
+  "settings.categories.selected": "Seçilen Kategoriler",
+  "settings.categories.notFound": "Kategori bulunamadı",
+  "settings.categories.hint": "Kategorileri yüklemek için yukarıdaki butona tıklayın",
+  "settings.categories.filter": "Stok Sayfasında Gösterilecek Kategoriler",
+
+  "settings.urls.title": "Oluşturulan API URL'leri",
+  "settings.urls.products": "Ürünler Listesi (GET)",
+  "settings.urls.categories": "Kategoriler Listesi (GET)",
+  "settings.urls.stockUpdate": "Stok Güncelleme (POST)",
+  "settings.urls.priceUpdate": "Fiyat/Maliyet Güncelleme (PUT)",
+  "settings.urls.send": "Gönder",
+  "settings.urls.sending": "Gönderiliyor...",
+
+  "settings.logs.title": "Sistem Logları",
+  "settings.logs.clear": "Logları Temizle",
+  "settings.logs.clear.confirm": "Tüm logları temizlemek istediğinizden emin misiniz?",
+  "settings.logs.copy": "Kopyala",
+
+  "history.title": "Stok Sayım Geçmişi",
+  "history.export": "CSV İndir",
+  "history.noData": "Henüz sayım kaydı bulunmuyor",
+  "history.details": "Değişiklik Detayları",
+  "history.priceChange": "Fiyat Değişimi",
+  "history.current": "Mevcut",
+  "history.final": "Son",
+  "history.countValue": "Sayım",
+
+  "csv.productName": "Ürün Adı",
+  "csv.current": "Mevcut",
+  "csv.counted": "Sayım",
+  "csv.added": "Eklenen",
+  "csv.diffCounted": "Fark (Sayım)",
+  "csv.total": "Toplam",
+  "csv.oldPrice": "Eski Fiyat",
+  "csv.newPrice": "Yeni Fiyat",
+  "csv.priceDiff": "Fiyat Farkı",
+  "csv.actionType": "İşlem Türü",
+  "csv.date": "Tarih",
 
   "login.title": "Giriş Yap",
   "login.username": "Kullanıcı Adı",
   "login.password": "Şifre",
   "login.serverIP": "Sunucu IP Adresi",
   "login.submit": "Giriş",
-  "login.error.required": "Lütfen tüm alanları doldurun"
+  "login.error.required": "Lütfen tüm alanları doldurun",
+
+  "errors.noChanges": "Güncellenecek stok, fiyat, maliyet veya barkod değişikliği bulunamadı!",
+  "errors.updateFailed": "Güncelleme sırasında kritik hata oluştu!\n\nDetay: {error}\n\nLütfen tekrar deneyin.",
+  "errors.partialFail": "Güncelleme tamamlandı fakat bazı kayıtlar başarısız oldu.",
+
+  "success.updateComplete": "Tüm güncellemeler başarıyla tamamlandı!",
+
+  "confirm.applyChanges": "Aşağıdaki değişiklikleri uygulamak istediğinizden emin misiniz?\n\n{details}\n\nBu işlem geri alınamaz."
 }
