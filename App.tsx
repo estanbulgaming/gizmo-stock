@@ -76,7 +76,7 @@ export default function App() {
 
 
   // Build API base URL from serverIP
-  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}` : '';
+  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}/api` : '';
 
   const joinApi = (path: string) => {
     let p = (path || '').trim();
@@ -3134,10 +3134,43 @@ export default function App() {
 
 
 
-  // Login handler
-  const handleLogin = () => {
-    if (apiConfig.serverIP.trim() && apiConfig.username.trim() && apiConfig.password.trim()) {
+  // Login state
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Login handler - validates credentials against API
+  const handleLogin = async () => {
+    if (!apiConfig.serverIP.trim() || !apiConfig.username.trim() || !apiConfig.password.trim()) {
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError(null);
+
+    try {
+      const testUrl = `http://${apiConfig.serverIP}/api${apiConfig.groupsEndpoint}`;
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${apiConfig.username}:${apiConfig.password}`),
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        setLoginError(t('login.error.credentials'));
+        return;
+      }
+
+      if (!response.ok) {
+        setLoginError(t('login.error.connection'));
+        return;
+      }
+
       setIsLoggedIn(true);
+    } catch {
+      setLoginError(t('login.error.connection'));
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -3214,13 +3247,17 @@ export default function App() {
             <Button
               type="submit"
               className="w-full mt-6"
-              disabled={!canSubmit}
+              disabled={!canSubmit || loginLoading}
             >
-              {t('login.submit')}
+              {loginLoading ? t('controls.loading') : t('login.submit')}
             </Button>
 
             {!canSubmit && (
               <p className="text-sm text-red-500 text-center">{t('login.error.required')}</p>
+            )}
+
+            {loginError && (
+              <p className="text-sm text-red-500 text-center">{loginError}</p>
             )}
           </form>
         </div>

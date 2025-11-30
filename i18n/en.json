@@ -117,6 +117,8 @@
   "login.serverIP": "Server IP Address",
   "login.submit": "Login",
   "login.error.required": "Please fill in all fields",
+  "login.error.credentials": "Invalid username or password",
+  "login.error.connection": "Could not connect to server",
 
   "errors.noChanges": "No stock, price, cost, or barcode changes to update!",
   "errors.updateFailed": "Critical error during update!\n\nDetail: {error}\n\nPlease try again.",
