@@ -46,6 +46,7 @@
   "item.oldPrice": "Eski Fiyat",
   "item.newPrice": "Yeni Fiyat",
   "item.priceDiff": "Fiyat Farkı",
+  "item.waste": "Zayi",
 
   "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz",
 
@@ -108,6 +109,8 @@
   "csv.oldPrice": "Eski Fiyat",
   "csv.newPrice": "Yeni Fiyat",
   "csv.priceDiff": "Fiyat Farkı",
+  "csv.waste": "Zayi",
+  "csv.wasteCost": "Zayi Tutarı",
   "csv.actionType": "İşlem Türü",
   "csv.date": "Tarih",
 

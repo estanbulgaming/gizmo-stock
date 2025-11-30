@@ -46,6 +46,7 @@
   "item.oldPrice": "Старая цена",
   "item.newPrice": "Новая цена",
   "item.priceDiff": "Разница в цене",
+  "item.waste": "Списание",
 
   "empty.hint": "Используйте «Загрузить товары» для просмотра списка запасов",
 
@@ -108,6 +109,8 @@
   "csv.oldPrice": "Старая цена",
   "csv.newPrice": "Новая цена",
   "csv.priceDiff": "Разница в цене",
+  "csv.waste": "Списание",
+  "csv.wasteCost": "Сумма списания",
   "csv.actionType": "Тип действия",
   "csv.date": "Дата",
 
