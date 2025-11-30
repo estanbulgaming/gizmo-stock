@@ -1334,15 +1334,15 @@ export default function App() {
 
     const updatedStockData = stockData.map(item => {
 
-      const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
+      const countedValue: number | null = typeof countedValues[item.id] === 'number' ? countedValues[item.id] as number : null;
 
-      const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+      const addedValue: number = typeof addedValues[item.id] === 'number' ? addedValues[item.id] as number : 0;
 
-      const wasteValue = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] : 0;
+      const wasteValue: number = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] as number : 0;
 
-      const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+      const pendingPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
 
-      const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+      const pendingCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
 
       const pendingBarcode = barcodeValues[item.id] || null;
 
@@ -3149,7 +3149,7 @@ export default function App() {
 
                       <span className="text-white">{log.message}</span>
 
-                      {log.details && (
+                      {log.details !== undefined && log.details !== null && (
 
                         <details className="mt-1">
 
@@ -3804,25 +3804,25 @@ export default function App() {
 
             {filteredStockData.map((item) => {
 
-              const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
+              const countedValue: number | null = typeof countedValues[item.id] === 'number' ? countedValues[item.id] as number : null;
 
-              const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
+              const addedValue: number = typeof addedValues[item.id] === 'number' ? addedValues[item.id] as number : 0;
 
               const totalAfterCount = countedValue !== null ? countedValue + addedValue : item.count + addedValue;
 
               const countDiff = countedValue !== null ? countedValue - item.count : null;
 
-              const enteredPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
+              const enteredPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
 
               const currentPrice = typeof item.price === 'number' ? item.price : null;
 
               const cost = typeof item.cost === 'number' ? item.cost : null;
 
-              const enteredPreviousPrice = typeof previousPriceValues[item.id] === 'number' ? previousPriceValues[item.id] : null;
+              const enteredPreviousPrice: number | null = typeof previousPriceValues[item.id] === 'number' ? previousPriceValues[item.id] as number : null;
 
               const previousPrice = enteredPreviousPrice ?? (typeof item.previousPrice === 'number' ? item.previousPrice : null);
 
-              const enteredNextPrice = typeof nextPriceValues[item.id] === 'number' ? nextPriceValues[item.id] : null;
+              const enteredNextPrice: number | null = typeof nextPriceValues[item.id] === 'number' ? nextPriceValues[item.id] as number : null;
 
               const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
 
@@ -3842,13 +3842,13 @@ export default function App() {
 
                 : null;
 
-              const enteredCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+              const enteredCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
 
-              const enteredPreviousCost = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] : null;
+              const enteredPreviousCost: number | null = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] as number : null;
 
               const _previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
 
-              const enteredNextCost = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] : null;
+              const enteredNextCost: number | null = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] as number : null;
 
               const _nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
 
@@ -3928,7 +3928,7 @@ export default function App() {
 
                           onClick={() => setEnlargedImage({
 
-                            url: item.imageUrl,
+                            url: item.imageUrl!,
 
                             name: item.name
 
@@ -4224,7 +4224,7 @@ export default function App() {
 
                           onClick={() => setEnlargedImage({
 
-                            url: item.imageUrl,
+                            url: item.imageUrl!,
 
                             name: item.name
 
@@ -4546,11 +4546,11 @@ export default function App() {
                       <Button
                         onClick={async () => {
                           // Apply changes for this single item
-                          const countedValue = typeof countedValues[item.id] === 'number' ? countedValues[item.id] : null;
-                          const addedValue = typeof addedValues[item.id] === 'number' ? addedValues[item.id] : 0;
-                          const wasteValue = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] : 0;
-                          const pendingPrice = typeof priceValues[item.id] === 'number' ? priceValues[item.id] : null;
-                          const pendingCost = typeof costValues[item.id] === 'number' ? costValues[item.id] : null;
+                          const countedValue: number | null = typeof countedValues[item.id] === 'number' ? countedValues[item.id] as number : null;
+                          const addedValue: number = typeof addedValues[item.id] === 'number' ? addedValues[item.id] as number : 0;
+                          const wasteValue: number = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] as number : 0;
+                          const pendingPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
+                          const pendingCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
                           const pendingBarcode = barcodeValues[item.id] || null;
 
                           let finalCount = item.count;

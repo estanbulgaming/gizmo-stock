@@ -24,6 +24,8 @@ export interface StockChange {
   previousCount: number;
   countedValue?: number;
   addedValue?: number;
+  wasteValue?: number;
+  wasteCost?: number;
   finalCount: number;
   previousPrice?: number;
   newPrice?: number;
