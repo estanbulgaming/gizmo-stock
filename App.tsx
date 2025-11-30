@@ -31,7 +31,7 @@ import { ToastContainer } from './components/Toast';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProductImageUrl, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost } from './services/api';
 
 
 
@@ -86,37 +86,8 @@ export default function App() {
 
 
 
-  // Auto-load missing product images when the setting is enabled
-
-  useEffect(() => {
-
-    if (!apiConfig.showProductImages || stockData.length === 0) return;
-
-    const idsToLoad = stockData
-
-      .filter(p => !p.imageUrl && !productImages[p.id])
-
-      .slice(0, 24)
-
-      .map(p => p.id);
-
-    if (idsToLoad.length === 0) return;
-
-    const concurrency = 5;
-
-    (async () => {
-
-      for (let i = 0; i < idsToLoad.length; i += concurrency) {
-
-        const batch = idsToLoad.slice(i, i + concurrency);
-
-        await Promise.all(batch.map(id => loadProductImage(id)));
-
-      }
-
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiConfig.showProductImages, stockData]);
+  // Images are now loaded with the product list (base64 in productImages field)
+  // No separate API calls needed
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -124,8 +95,6 @@ export default function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
-
-  const [productImages, setProductImages] = useState<{ [key: string]: string }>({});
 
   const [enlargedImage, setEnlargedImage] = useState<{ url: string; name: string } | null>(null);
 
@@ -419,42 +388,6 @@ export default function App() {
 
     console[consoleMethod](`[${category}] ${message}`, details || '');
 
-  };
-
-
-
-  // Load product image for a specific product (with localStorage cache)
-  const loadProductImage = async (productId: string) => {
-    if (!apiConfig.showProductImages) return;
-    if (productImages[productId]) return;
-
-    // Check localStorage cache first
-    const cachedUrl = getCachedImageUrl(productId);
-    if (cachedUrl) {
-      setProductImages(prev => ({ ...prev, [productId]: cachedUrl }));
-      setStockData(prev => prev.map(item =>
-        item.id === productId ? { ...item, imageUrl: cachedUrl } : item
-      ));
-      return;
-    }
-
-    const product = stockData.find(p => p.id === productId);
-    if (!product) return;
-
-    try {
-      const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, productId, product);
-      if (!imageUrl) return;
-
-      // Save to localStorage cache
-      setCachedImageUrl(productId, imageUrl);
-
-      setProductImages(prev => ({ ...prev, [productId]: imageUrl }));
-      setStockData(prev => prev.map(item =>
-        item.id === productId ? { ...item, imageUrl } : item
-      ));
-    } catch {
-      // Silently fail - no need to log every image failure
-    }
   };
 
 
@@ -1179,17 +1112,7 @@ export default function App() {
 
       fetchStocksForProducts(products.map((p) => p.id));
       addLog('success', 'PRODUCTS_API', `${totalProducts} ürün yüklendi, toplam stok: ${totalStock}`);
-
-      if (apiConfig.showProductImages) {
-        const idsToLoad = products.filter(p => !p.imageUrl).slice(0, 24).map(p => p.id);
-        if (idsToLoad.length > 0) {
-          const concurrency = 5;
-          for (let i = 0; i < idsToLoad.length; i += concurrency) {
-            const batch = idsToLoad.slice(i, i + concurrency);
-            await Promise.all(batch.map(id => loadProductImage(id)));
-          }
-        }
-      }
+      // Images are loaded by useEffect, not here
     } catch (error) {
       addLog('error', 'PRODUCTS_API', 'Ürünler yüklenirken hata', error);
       showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
@@ -3671,11 +3594,11 @@ export default function App() {
 
                     <div className="w-16 h-16 flex-shrink-0">
 
-                      {item.imageUrl || productImages[item.id] ? (
+                      {item.imageUrl ? (
 
                         <ImageWithFallback
 
-                          src={item.imageUrl || productImages[item.id]}
+                          src={item.imageUrl}
 
                           alt={item.name}
 
@@ -3683,7 +3606,7 @@ export default function App() {
 
                           onClick={() => setEnlargedImage({
 
-                            url: item.imageUrl || productImages[item.id],
+                            url: item.imageUrl,
 
                             name: item.name
 
@@ -3939,11 +3862,11 @@ export default function App() {
 
                     <div className="w-16 h-16 flex-shrink-0">
 
-                      {item.imageUrl || productImages[item.id] ? (
+                      {item.imageUrl ? (
 
                         <ImageWithFallback
 
-                          src={item.imageUrl || productImages[item.id]}
+                          src={item.imageUrl}
 
                           alt={item.name}
 
@@ -3951,7 +3874,7 @@ export default function App() {
 
                           onClick={() => setEnlargedImage({
 
-                            url: item.imageUrl || productImages[item.id],
+                            url: item.imageUrl,
 
                             name: item.name
 
