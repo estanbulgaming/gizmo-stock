@@ -68,22 +68,20 @@ export default function App() {
 
   const [apiConfig, setApiConfig] = useApiConfig(DEFAULT_API_CONFIG);
 
+  // Explicit login state - requires manual login button click
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   // Language state - triggers re-render when language changes
   const [currentLanguage, setCurrentLanguage] = useState<Lang>(getLang());
 
 
-  // Use relative base path so dev (Vite) and prod (Nginx) proxies handle CORS
-
-  const apiBase = '/api';
+  // Build API base URL from serverIP
+  const apiBase = apiConfig.serverIP ? `http://${apiConfig.serverIP}` : '';
 
   const joinApi = (path: string) => {
-
     let p = (path || '').trim();
-
     if (!p.startsWith('/')) p = '/' + p;
-
-    return p.startsWith('/api/') ? p : `${apiBase}${p}`;
-
+    return `${apiBase}${p}`;
   };
 
 
@@ -3136,8 +3134,12 @@ export default function App() {
 
 
 
-  // Check if login is required
-  const isLoggedIn = apiConfig.serverIP && apiConfig.username && apiConfig.password;
+  // Login handler
+  const handleLogin = () => {
+    if (apiConfig.serverIP.trim() && apiConfig.username.trim() && apiConfig.password.trim()) {
+      setIsLoggedIn(true);
+    }
+  };
 
   // Login screen
   if (!isLoggedIn) {
@@ -3172,7 +3174,7 @@ export default function App() {
             <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
             <div>
               <Label htmlFor="login-username" className="text-gray-700">{t('login.username')}</Label>
               <Input

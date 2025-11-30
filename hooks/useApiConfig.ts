@@ -50,16 +50,21 @@ const getStoredConfig = (fallback: ApiConfig): ApiConfig => {
 export function useApiConfig(initialConfig: ApiConfig = DEFAULT_API_CONFIG): UseApiConfigReturn {
   const [apiConfig, setApiConfig] = useState<ApiConfig>(() => getStoredConfig(initialConfig));
 
+  // Debounced localStorage save to prevent focus loss on rapid input
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    try {
-      window.localStorage.setItem(API_CONFIG_STORAGE_KEY, JSON.stringify(apiConfig));
-    } catch (error) {
-      console.warn('apiConfig save failed', error);
-    }
+    const timeoutId = setTimeout(() => {
+      try {
+        window.localStorage.setItem(API_CONFIG_STORAGE_KEY, JSON.stringify(apiConfig));
+      } catch (error) {
+        console.warn('apiConfig save failed', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [apiConfig]);
 
   return [apiConfig, setApiConfig];
