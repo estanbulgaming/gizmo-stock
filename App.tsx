@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState, useMemo, useCallback, useDeferredValue } from 'react';
 
 import { NumpadInput } from './components/NumpadInput';
 
@@ -125,6 +125,7 @@ export default function App() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const [productImages, setProductImages] = useState<{ [key: string]: string }>({});
 
@@ -156,17 +157,12 @@ export default function App() {
 
 
 
-  const handleCountedChange = (id: string, countedValue: number | '') => {
-
+  const handleCountedChange = useCallback((id: string, countedValue: number | '') => {
     setCountedValues(prev => ({
-
       ...prev,
-
       [id]: countedValue
-
     }));
-
-  };
+  }, []);
 
 
 
@@ -279,55 +275,33 @@ export default function App() {
 
 
 
-  const handleAddedChange = (id: string, addedValue: number | '') => {
-
+  const handleAddedChange = useCallback((id: string, addedValue: number | '') => {
     setAddedValues(prev => ({
-
       ...prev,
-
       [id]: addedValue
-
     }));
+  }, []);
 
-  };
-
-
-
-  const handlePriceChange = (id: string, value: number | '') => {
-
+  const handlePriceChange = useCallback((id: string, value: number | '') => {
     setPriceValues(prev => ({
-
       ...prev,
-
       [id]: value
-
     }));
+  }, []);
 
-  };
-
-  const handleCostChange = (id: string, value: number | '') => {
-
+  const handleCostChange = useCallback((id: string, value: number | '') => {
     setCostValues(prev => ({
-
       ...prev,
-
       [id]: value
-
     }));
+  }, []);
 
-  };
-
-  const handleBarcodeChange = (id: string, value: string) => {
-
+  const handleBarcodeChange = useCallback((id: string, value: string) => {
     setBarcodeValues(prev => ({
-
       ...prev,
-
       [id]: value
-
     }));
-
-  };
+  }, []);
 
 
 
@@ -1926,83 +1900,56 @@ export default function App() {
 
 
 
-  // Filter and sort stock data based on search query and product group
-
-  const getFilteredStockData = () => {
-
+  // Filter and sort stock data based on search query and product group (memoized)
+  const filteredStockData = useMemo(() => {
     let filteredData = stockData;
 
-
-
     // Apply product group filter first
-
     if (activeProductGroupFilter !== null) {
-
       filteredData = stockData.filter(item => item.productGroupId === activeProductGroupFilter);
-
     }
 
-
-
-    // Then apply search filter if there's a query
-
-    if (!searchQuery.trim()) {
-
+    // Then apply search filter if there's a query (use deferred value for smooth typing)
+    if (!deferredSearchQuery.trim()) {
       return filteredData;
-
     }
 
-
-
-    const query = searchQuery.toLowerCase().trim();
-
-    
+    const query = deferredSearchQuery.toLowerCase().trim();
 
     // Separate exact matches and partial matches
-
     const exactMatches: StockData[] = [];
-
     const partialMatches: StockData[] = [];
 
-    
-
     filteredData.forEach(item => {
-
       const nameMatch = item.name.toLowerCase();
-
       const barcodeMatch = item.barcode.toLowerCase();
 
-      
-
       // Check for exact barcode or exact name match
-
       if (barcodeMatch === query || nameMatch === query) {
-
         exactMatches.push(item);
-
       }
-
-      // Check for partial matches (name contains search query or barcode starts with query)
-
+      // Check for partial matches
       else if (nameMatch.includes(query) || barcodeMatch.includes(query)) {
-
         partialMatches.push(item);
-
       }
-
     });
 
-    
-
     // Return exact matches first, then partial matches
-
     return [...exactMatches, ...partialMatches];
+  }, [stockData, activeProductGroupFilter, deferredSearchQuery]);
 
-  };
-
-
-
-  const filteredStockData = getFilteredStockData();
+  // Helper function for resetAllToZero (uses current searchQuery, not deferred)
+  const getFilteredStockData = useCallback(() => {
+    let filteredData = stockData;
+    if (activeProductGroupFilter !== null) {
+      filteredData = stockData.filter(item => item.productGroupId === activeProductGroupFilter);
+    }
+    if (!searchQuery.trim()) return filteredData;
+    const query = searchQuery.toLowerCase().trim();
+    return filteredData.filter(item =>
+      item.name.toLowerCase().includes(query) || item.barcode.toLowerCase().includes(query)
+    );
+  }, [stockData, activeProductGroupFilter, searchQuery]);
 
 
 
