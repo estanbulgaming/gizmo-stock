@@ -2201,10 +2201,10 @@ export default function App() {
     // API URL test states
     const [apiUrlTests, setApiUrlTests] = useState<{[key: string]: boolean}>({});
     const [editableUrls, setEditableUrls] = useState({
-      productsUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.endpoint}?${apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}"`,
-      categoriesUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}${apiConfig.groupsEndpoint}"`,
+      productsUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}/api${apiConfig.endpoint}?${apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}"`,
+      categoriesUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}/api${apiConfig.groupsEndpoint}"`,
       stockUpdateUrl: `curl -u ${apiConfig.username}:${apiConfig.password} -X POST "http://${apiConfig.serverIP}/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]"`,
-      priceUpdateUrl: `curl -H "Content-Type: application/json" -u ${apiConfig.username}:${apiConfig.password} -X PUT "http://${apiConfig.serverIP}${joinApi('/v2.0/products')}" -d '{"id": [PRODUCT_ID], "productType": [PRODUCT_TYPE], "guid": "[PRODUCT_GUID]", "productGroupId": [PRODUCT_GROUP_ID], "name": "[PRODUCT_NAME]", "price": [NEW_PRICE], "cost": [NEW_COST], "barcode": "[BARCODE]"}'`
+      priceUpdateUrl: `curl -H "Content-Type: application/json" -u ${apiConfig.username}:${apiConfig.password} -X PUT "http://${apiConfig.serverIP}/api/v2.0/products" -d '{"id": [PRODUCT_ID], "productType": [PRODUCT_TYPE], "guid": "[PRODUCT_GUID]", "productGroupId": [PRODUCT_GROUP_ID], "name": "[PRODUCT_NAME]", "price": [NEW_PRICE], "cost": [NEW_COST], "barcode": "[BARCODE]"}'`
     });
 
 
