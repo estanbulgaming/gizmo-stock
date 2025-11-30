@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+
+const STORAGE_KEY = 'gizmo-counting-session';
 
 export interface CountingSessionChange {
   productId: string;
@@ -37,7 +39,31 @@ export interface UseCountingSessionReturn {
 }
 
 export function useCountingSession(): UseCountingSessionReturn {
-  const [session, setSession] = useState<CountingSession | null>(null);
+  const [session, setSession] = useState<CountingSession | null>(() => {
+    // Load from localStorage on init
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Only restore active sessions
+        if (parsed && parsed.status === 'active') {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return null;
+  });
+
+  // Save to localStorage whenever session changes
+  useEffect(() => {
+    if (session && session.status === 'active') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [session]);
 
   const isSessionActive = session?.status === 'active';
 
