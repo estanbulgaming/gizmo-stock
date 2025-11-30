@@ -59,6 +59,8 @@ export default function App() {
 
   const [wasteValues, setWasteValues] = useState<{ [key: string]: number | '' }>({});
 
+  const [countedProductIds, setCountedProductIds] = useState<Set<string>>(new Set());
+
   const { toasts, showToast, dismissToast } = useToast();
   const { session, isSessionActive, startSession, endSession, addChange } = useCountingSession();
 
@@ -1806,6 +1808,17 @@ export default function App() {
         }
       }
 
+      // Mark products as counted if session is active
+      if (isSessionActive) {
+        const updatedProductIds = new Set([
+          ...stockUpdates.map(u => u.productId),
+          ...priceUpdates.map(u => u.productId),
+          ...costUpdates.map(u => u.productId),
+          ...barcodeUpdates.map(u => u.productId),
+        ]);
+        setCountedProductIds(prev => new Set([...prev, ...updatedProductIds]));
+      }
+
       setCountedValues({});
 
       setAddedValues({});
@@ -2110,6 +2123,7 @@ export default function App() {
           downloadSessionReport(session, t);
         }
         endSession();
+        setCountedProductIds(new Set());
         showToast('success', t('counting.download'));
       }
     };
@@ -3677,8 +3691,16 @@ export default function App() {
 
               <div key={item.id} className={`bg-card border rounded-lg p-3 sm:p-4 ${item.isDeleted ? 'opacity-60 border-dashed' : ''}`}>
 
-                {/* Delete/Restore Button */}
-                <div className="flex justify-end mb-2">
+                {/* Counted Badge & Delete/Restore Button */}
+                <div className="flex justify-between items-center mb-2">
+                  {isSessionActive && countedProductIds.has(item.id) ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                      ✓ {t('item.countedBadge')}
+                    </span>
+                  ) : (
+                    <span></span>
+                  )}
+                  <div>
                   {item.isDeleted ? (
                     <Button
                       variant="outline"
@@ -3725,6 +3747,7 @@ export default function App() {
                       {t('controls.delete')}
                     </Button>
                   )}
+                  </div>
                 </div>
 
                 {/* Mobile Layout */}
@@ -4412,6 +4435,9 @@ export default function App() {
                                 newCost: costChanged ? (pendingCost as number) : previousCost,
                                 timestamp: new Date().toISOString(),
                               });
+
+                              // Mark product as counted
+                              setCountedProductIds(prev => new Set([...prev, item.id]));
                             }
 
                             // Update local state
