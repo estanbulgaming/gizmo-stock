@@ -46,6 +46,7 @@
   "item.oldPrice": "Παλιά Τιμή",
   "item.newPrice": "Νέα Τιμή",
   "item.priceDiff": "Διαφορά Τιμής",
+  "item.waste": "Απώλεια",
 
   "empty.hint": "Χρησιμοποιήστε \"Φόρτωση Προϊόντων\" για να δείτε τη λίστα αποθέματος",
 
@@ -108,6 +109,8 @@
   "csv.oldPrice": "Παλιά Τιμή",
   "csv.newPrice": "Νέα Τιμή",
   "csv.priceDiff": "Διαφορά Τιμής",
+  "csv.waste": "Απώλεια",
+  "csv.wasteCost": "Κόστος Απώλειας",
   "csv.actionType": "Τύπος Ενέργειας",
   "csv.date": "Ημερομηνία",
 
