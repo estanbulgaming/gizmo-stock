@@ -2090,7 +2090,7 @@ Lutfen tekrar deneyin.`);
 
 
 
-    const totalCounted = dayChanges.filter(c => c.reason.includes('Say?m')).length;
+    const totalCounted = dayChanges.filter(c => c.reason.includes('Sayim')).length;
 
 
 
@@ -3202,7 +3202,7 @@ Lutfen tekrar deneyin.`);
 
                         Mevcut: {change.previousCount} ? Son: {change.finalCount}
 
-                        {change.countedValue !== undefined && ` (Say?m: ${change.countedValue})`}
+                        {change.countedValue !== undefined && ` (Sayim: ${change.countedValue})`}
 
                         {change.addedValue ? ` (Eklenen: ${change.addedValue})` : ''}
 
