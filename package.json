@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "prepare": "git config core.hooksPath .githooks",
     "docker:build": "docker build -t stok-yonetim:latest .",
     "docker:build:clean": "docker build --no-cache --pull -t stok-yonetim:latest .",
     "docker:run": "docker run -d --name stok-yonetim-app -p 3000:80 stok-yonetim:latest",
