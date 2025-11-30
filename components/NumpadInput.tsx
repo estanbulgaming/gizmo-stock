@@ -199,11 +199,13 @@ export function NumpadInput({ value, onChange, placeholder = "0", className = ""
             }
           }}
           onFocus={() => {
-            if (defaultValue !== undefined && (value === '' || value === 0)) {
+            // Only set defaultValue if value is empty (not entered yet)
+            // Don't override if user explicitly set 0
+            if (defaultValue !== undefined && value === '') {
               setDisplayValue(defaultValue.toString());
               onChange(defaultValue);
               setIsNewInput(true);
-            } else if (value !== '' && value !== 0) {
+            } else if (value !== '') {
               setIsNewInput(true);
             } else {
               setIsNewInput(false);
