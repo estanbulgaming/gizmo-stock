@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 import { Checkbox } from './components/ui/checkbox';
 
-import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check } from 'lucide-react';
+import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check, ChevronDown } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -2199,6 +2199,7 @@ export default function App() {
     const [logFilter, setLogFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
 
     // API URL test states
+    const [showApiUrls, setShowApiUrls] = useState(false);
     const [apiUrlTests, setApiUrlTests] = useState<{[key: string]: boolean}>({});
     const [editableUrls, setEditableUrls] = useState({
       productsUrl: `curl -u ${apiConfig.username}:${apiConfig.password} "http://${apiConfig.serverIP}/api${apiConfig.endpoint}?${apiConfig.includeDeleted ? 'IsDeleted=true' : 'IsDeleted=false'}&${apiConfig.baseParams}&Pagination.Limit=${apiConfig.paginationLimit}"`,
@@ -2732,164 +2733,91 @@ export default function App() {
 
 
 
-        {/* Current API URL Preview */}
-
+        {/* Current API URL Preview - Collapsible */}
         <Card className="p-4">
+          <button
+            onClick={() => setShowApiUrls(!showApiUrls)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <h4>{t('settings.urls.title')}</h4>
+            <ChevronDown className={`h-5 w-5 transition-transform ${showApiUrls ? 'rotate-180' : ''}`} />
+          </button>
 
-          <h4 className="mb-2">{t('settings.urls.title')}:</h4>
-
-          <div className="space-y-3">
-
-            <div>
-
-              <p className="text-sm font-medium mb-1">{t('settings.urls.products')}:</p>
-
-              <div className="flex gap-2">
-
-                <Input
-
-                  className="font-mono text-sm flex-1"
-
-                  value={editableUrls.productsUrl}
-
-                  onChange={(e) => setEditableUrls(prev => ({ ...prev, productsUrl: e.target.value }))}
-
-                />
-
-                <Button
-
-                  onClick={() => testApiUrl('productsUrl', editableUrls.productsUrl)}
-
-                  disabled={apiUrlTests.productsUrl}
-
-                  size="sm"
-
-                >
-
-                  {apiUrlTests.productsUrl ? t('settings.urls.sending') : t('settings.urls.send')}
-
-                </Button>
-
+          {showApiUrls && (
+            <div className="space-y-3 mt-4">
+              <div>
+                <p className="text-sm font-medium mb-1">{t('settings.urls.products')}:</p>
+                <div className="flex gap-2">
+                  <Input
+                    className="font-mono text-sm flex-1"
+                    value={editableUrls.productsUrl}
+                    onChange={(e) => setEditableUrls(prev => ({ ...prev, productsUrl: e.target.value }))}
+                  />
+                  <Button
+                    onClick={() => testApiUrl('productsUrl', editableUrls.productsUrl)}
+                    disabled={apiUrlTests.productsUrl}
+                    size="sm"
+                  >
+                    {apiUrlTests.productsUrl ? t('settings.urls.sending') : t('settings.urls.send')}
+                  </Button>
+                </div>
               </div>
 
-            </div>
-
-            <div>
-
-              <p className="text-sm font-medium mb-1">{t('settings.urls.categories')}:</p>
-
-              <div className="flex gap-2">
-
-                <Input
-
-                  className="font-mono text-sm flex-1"
-
-                  value={editableUrls.categoriesUrl}
-
-                  onChange={(e) => setEditableUrls(prev => ({ ...prev, categoriesUrl: e.target.value }))}
-
-                />
-
-                <Button
-
-                  onClick={() => testApiUrl('categoriesUrl', editableUrls.categoriesUrl)}
-
-                  disabled={apiUrlTests.categoriesUrl}
-
-                  size="sm"
-
-                >
-
-                  {apiUrlTests.categoriesUrl ? t('settings.urls.sending') : t('settings.urls.send')}
-
-                </Button>
-
+              <div>
+                <p className="text-sm font-medium mb-1">{t('settings.urls.categories')}:</p>
+                <div className="flex gap-2">
+                  <Input
+                    className="font-mono text-sm flex-1"
+                    value={editableUrls.categoriesUrl}
+                    onChange={(e) => setEditableUrls(prev => ({ ...prev, categoriesUrl: e.target.value }))}
+                  />
+                  <Button
+                    onClick={() => testApiUrl('categoriesUrl', editableUrls.categoriesUrl)}
+                    disabled={apiUrlTests.categoriesUrl}
+                    size="sm"
+                  >
+                    {apiUrlTests.categoriesUrl ? t('settings.urls.sending') : t('settings.urls.send')}
+                  </Button>
+                </div>
               </div>
 
-            </div>
-
-            <div>
-
-              <p className="text-sm font-medium mb-1">{t('settings.urls.stockUpdate')}:</p>
-
-              <div className="flex gap-2">
-
-                <Input
-
-                  className="font-mono text-sm flex-1"
-
-                  value={editableUrls.stockUpdateUrl}
-
-                  onChange={(e) => setEditableUrls(prev => ({ ...prev, stockUpdateUrl: e.target.value }))}
-
-                />
-
-                <Button
-
-                  onClick={() => testApiUrl('stockUpdateUrl', editableUrls.stockUpdateUrl)}
-
-                  disabled={apiUrlTests.stockUpdateUrl}
-
-                  size="sm"
-
-                >
-
-                  {apiUrlTests.stockUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
-
-                </Button>
-
+              <div>
+                <p className="text-sm font-medium mb-1">{t('settings.urls.stockUpdate')}:</p>
+                <div className="flex gap-2">
+                  <Input
+                    className="font-mono text-sm flex-1"
+                    value={editableUrls.stockUpdateUrl}
+                    onChange={(e) => setEditableUrls(prev => ({ ...prev, stockUpdateUrl: e.target.value }))}
+                  />
+                  <Button
+                    onClick={() => testApiUrl('stockUpdateUrl', editableUrls.stockUpdateUrl)}
+                    disabled={apiUrlTests.stockUpdateUrl}
+                    size="sm"
+                  >
+                    {apiUrlTests.stockUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
+                  </Button>
+                </div>
               </div>
 
-              <p className="text-xs text-muted-foreground mt-2">
-
-                Örnek: curl -u {apiConfig.username}:{apiConfig.password} -X POST "http://{apiConfig.serverIP}/api/stock/48/25"
-
-              </p>
-
-            </div>
-
-            <div>
-
-              <p className="text-sm font-medium mb-1">{t('settings.urls.priceUpdate')}:</p>
-
-              <div className="flex gap-2">
-
-                <Input
-
-                  className="font-mono text-sm flex-1"
-
-                  value={editableUrls.priceUpdateUrl}
-
-                  onChange={(e) => setEditableUrls(prev => ({ ...prev, priceUpdateUrl: e.target.value }))}
-
-                />
-
-                <Button
-
-                  onClick={() => testApiUrl('priceUpdateUrl', editableUrls.priceUpdateUrl)}
-
-                  disabled={apiUrlTests.priceUpdateUrl}
-
-                  size="sm"
-
-                >
-
-                  {apiUrlTests.priceUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
-
-                </Button>
-
+              <div>
+                <p className="text-sm font-medium mb-1">{t('settings.urls.priceUpdate')}:</p>
+                <div className="flex gap-2">
+                  <Input
+                    className="font-mono text-sm flex-1"
+                    value={editableUrls.priceUpdateUrl}
+                    onChange={(e) => setEditableUrls(prev => ({ ...prev, priceUpdateUrl: e.target.value }))}
+                  />
+                  <Button
+                    onClick={() => testApiUrl('priceUpdateUrl', editableUrls.priceUpdateUrl)}
+                    disabled={apiUrlTests.priceUpdateUrl}
+                    size="sm"
+                  >
+                    {apiUrlTests.priceUpdateUrl ? t('settings.urls.sending') : t('settings.urls.send')}
+                  </Button>
+                </div>
               </div>
-
-              <p className="text-xs text-muted-foreground mt-2">
-
-                Örnek: curl -H "Content-Type: application/json" -u {apiConfig.username}:{apiConfig.password} -X PUT "http://{apiConfig.serverIP}{joinApi('/v2.0/products')}" -d '{`{`}"id": 48, "productType": 0, "guid": "abc-123", "productGroupId": 5, "name": "Ürün Adı", "price": 199.90, "cost": 100, "barcode": "1234567890"{`}`}'
-
-              </p>
-
             </div>
-
-          </div>
-
+          )}
         </Card>
 
 
