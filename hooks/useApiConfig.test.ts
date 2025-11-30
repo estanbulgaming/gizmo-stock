@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useApiConfig, DEFAULT_API_CONFIG, API_CONFIG_STORAGE_KEY } from './useApiConfig';
 
 describe('useApiConfig', () => {
@@ -28,7 +28,7 @@ describe('useApiConfig', () => {
     expect(result.current[0].username).toBe('testuser');
   });
 
-  it('should persist config changes to localStorage', () => {
+  it('should persist config changes to localStorage', async () => {
     const { result } = renderHook(() => useApiConfig());
 
     act(() => {
@@ -38,10 +38,13 @@ describe('useApiConfig', () => {
       });
     });
 
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      API_CONFIG_STORAGE_KEY,
-      expect.stringContaining('10.0.0.1')
-    );
+    // Wait for debounced localStorage save (300ms)
+    await waitFor(() => {
+      expect(window.localStorage.setItem).toHaveBeenCalledWith(
+        API_CONFIG_STORAGE_KEY,
+        expect.stringContaining('10.0.0.1')
+      );
+    }, { timeout: 500 });
   });
 
   it('should merge partial saved config with defaults', () => {
