@@ -13,6 +13,7 @@
   imageUrl?: string;
   productGroupId?: number;
   isDeleted?: boolean;
+  enableStock?: boolean;
 }
 
 export interface StockChange {

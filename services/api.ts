@@ -137,6 +137,7 @@ export const fetchProducts = async (
       productGroupId:
         productGroupIdValue == null ? undefined : parseNumber(productGroupIdValue, 0),
       isDeleted: Boolean(entry['isDeleted']),
+      enableStock: Boolean(entry['enableStock']),
     });
   }
 
@@ -215,6 +216,59 @@ export const restoreProduct = async (
   productId: string
 ): Promise<void> => {
   await updateProductDeletedStatus(context, productId, false);
+};
+
+// Update product enableStock status via PUT
+export const updateEnableStock = async (
+  { apiConfig, joinApi }: ApiContext,
+  productId: string,
+  enableStock: boolean
+): Promise<void> => {
+  // First fetch the product to get all required fields
+  const getUrl = `${joinApi(`/v2.0/products/${productId}`)}?id=${productId}`;
+  const getResponse = await fetch(getUrl, {
+    method: 'GET',
+    headers: {
+      ...authHeader(apiConfig),
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!getResponse.ok) {
+    throw new Error(`HTTP error! status: ${getResponse.status}`);
+  }
+
+  const productData = await getResponse.json();
+  const product = productData.result || productData;
+
+  // Build update payload with required fields + enableStock
+  const updatedProduct = {
+    id: product.id,
+    productType: product.productType,
+    guid: product.guid,
+    productGroupId: product.productGroupId,
+    name: product.name,
+    productImages: product.productImages,
+    price: product.price,
+    cost: product.cost,
+    barcode: product.barcode,
+    enableStock,
+  };
+
+  // Send PUT request to update product
+  const putUrl = joinApi('/v2.0/products');
+  const putResponse = await fetch(putUrl, {
+    method: 'PUT',
+    headers: {
+      ...authHeader(apiConfig),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updatedProduct),
+  });
+
+  if (!putResponse.ok) {
+    throw new Error(`HTTP error! status: ${putResponse.status}`);
+  }
 };
 
 export const fetchProductImageUrl = async (

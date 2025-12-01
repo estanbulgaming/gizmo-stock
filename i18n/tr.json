@@ -51,6 +51,8 @@
   "item.priceDiff": "Fiyat Farkı",
   "item.waste": "Zayi",
   "item.countedBadge": "Sayıldı",
+  "item.enableStock": "Stok Tut",
+  "item.stockDisabled": "Stok kapalı",
 
   "empty.hint": "Ürünleri Getir ile stok listenizi görebilirsiniz",
 

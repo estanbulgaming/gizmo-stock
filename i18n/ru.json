@@ -51,6 +51,8 @@
   "item.priceDiff": "Разница в цене",
   "item.waste": "Списание",
   "item.countedBadge": "Подсчитано",
+  "item.enableStock": "Учёт запасов",
+  "item.stockDisabled": "Учёт отключен",
 
   "empty.hint": "Используйте «Загрузить товары» для просмотра списка запасов",
 
