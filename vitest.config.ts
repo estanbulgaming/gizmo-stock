@@ -18,6 +18,15 @@ export default defineConfig({
         '**/*.config.*',
         'dist/',
       ],
+      thresholds: {
+        // Enforce coverage for API services (critical for Gizmo API stability)
+        'services/**/*.ts': {
+          statements: 70,
+          branches: 60,
+          functions: 70,
+          lines: 70,
+        },
+      },
     },
   },
 });
