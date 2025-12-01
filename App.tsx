@@ -125,10 +125,14 @@ export default function App() {
       return;
     }
 
+    let isCancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const loadImage = async () => {
       // Check cache first
       const cachedUrl = getCachedImageUrl(productId);
       if (cachedUrl) {
+        if (isCancelled) return;
         setStockData(prev => prev.map(item =>
           item.id === productId ? { ...item, imageUrl: cachedUrl } : item
         ));
@@ -139,12 +143,14 @@ export default function App() {
 
       const product = stockData.find(p => p.id === productId);
       if (!product) {
+        if (isCancelled) return;
         setImageLoadingQueue(prev => prev.slice(1));
         return;
       }
 
       try {
         const imageUrl = await fetchProductImageUrl({ apiConfig, joinApi }, productId, product);
+        if (isCancelled) return;
         if (imageUrl) {
           setCachedImageUrl(productId, imageUrl);
           setStockData(prev => prev.map(item =>
@@ -155,14 +161,21 @@ export default function App() {
         // Silent fail
       }
 
+      if (isCancelled) return;
       setLoadedImages(prev => new Set(prev).add(productId));
       // Wait before next image
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        if (isCancelled) return;
         setImageLoadingQueue(prev => prev.slice(1));
       }, 300);
     };
 
     loadImage();
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [imageLoadingQueue, apiConfig.showProductImages, apiConfig, joinApi, stockData, loadedImages]);
 
   // Queue first 10 images when products load
