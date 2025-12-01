@@ -2973,18 +2973,70 @@ export default function App() {
 
               return (
 
-              <div key={item.id} className={`bg-card border rounded-lg p-3 sm:p-4 ${item.isDeleted ? 'opacity-60 border-dashed' : ''}`}>
-
-                {/* Counted Badge & Delete/Restore Button */}
-                <div className="flex justify-between items-center mb-2">
-                  {isSessionActive && countedProductIds.has(item.id) ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                      ✓ {t('item.countedBadge')}
+              <div key={item.id} className={`border rounded-lg transition-colors flex ${
+                item.isDeleted
+                  ? 'opacity-60 border-dashed bg-card'
+                  : isSessionActive && countedProductIds.has(item.id)
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-card'
+              }`}>
+                {/* Vertical Counted Tab - Left Side */}
+                {isSessionActive && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCountedProductIds(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(item.id)) {
+                          newSet.delete(item.id);
+                        } else {
+                          newSet.add(item.id);
+                        }
+                        return newSet;
+                      });
+                    }}
+                    className={`flex-shrink-0 w-8 flex items-center justify-center rounded-l-lg transition-colors ${
+                      countedProductIds.has(item.id)
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-gray-200 text-gray-400 hover:bg-gray-300 hover:text-gray-600'
+                    }`}
+                    title={t('item.countedBadge')}
+                  >
+                    <span className="text-lg font-bold">
+                      {countedProductIds.has(item.id) ? '✓' : '○'}
                     </span>
-                  ) : (
-                    <span></span>
-                  )}
-                  <div>
+                  </button>
+                )}
+
+                {/* Main Card Content */}
+                <div className={`flex-1 p-3 sm:p-4 ${isSessionActive ? '' : 'rounded-lg'}`}>
+
+                {/* Delete/Restore Button & Enable Stock */}
+                <div className="flex justify-between items-center mb-2">
+                  <span></span>
+                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 mr-2">
+                    <Checkbox
+                      id={`enableStock-${item.id}`}
+                      checked={item.enableStock ?? false}
+                      onCheckedChange={async (checked) => {
+                        try {
+                          await updateEnableStock({ apiConfig, joinApi }, item.id, checked as boolean);
+                          setStockData(prev => prev.map(p =>
+                            p.id === item.id ? { ...p, enableStock: checked as boolean } : p
+                          ));
+                          addLog('success', 'STOCK_ENABLE', `Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}: ${item.name}`);
+                          showToast('success', `${item.name} - Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}`);
+                        } catch (error) {
+                          addLog('error', 'STOCK_ENABLE', `Stok takibi değiştirilemedi: ${item.name}`, error);
+                          showToast('error', `Stok takibi değiştirilemedi`);
+                        }
+                      }}
+                    />
+                    <label htmlFor={`enableStock-${item.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                      {t('item.enableStock')}
+                    </label>
+                  </div>
                   {item.isDeleted ? (
                     <Button
                       variant="outline"
@@ -3644,15 +3696,16 @@ export default function App() {
 
                 {/* Action Buttons */}
                 {(() => {
-                  const hasChanges =
-                    (countedValues[item.id] !== undefined && countedValues[item.id] !== '') ||
+                  // Show button if counted field has any value (even same as current stock)
+                  const countedTouched = countedValues[item.id] !== undefined && countedValues[item.id] !== '';
+                  const hasOtherChanges =
                     (addedValues[item.id] !== undefined && addedValues[item.id] !== 0 && addedValues[item.id] !== '') ||
                     (wasteValues[item.id] !== undefined && wasteValues[item.id] !== 0 && wasteValues[item.id] !== '') ||
                     (priceValues[item.id] !== undefined && priceValues[item.id] !== '') ||
                     (costValues[item.id] !== undefined && costValues[item.id] !== '') ||
                     (barcodeValues[item.id] !== undefined && barcodeValues[item.id] !== item.barcode);
 
-                  if (!hasChanges) return null;
+                  if (!countedTouched && !hasOtherChanges) return null;
 
                   return (
                     <div className="mt-3 pt-3 border-t flex gap-2">
@@ -3721,7 +3774,18 @@ export default function App() {
                           const costChanged = pendingCost !== null && (previousCost === undefined || Math.abs(pendingCost - previousCost) > 0.0001);
                           const barcodeChanged = pendingBarcode !== null && pendingBarcode.trim() !== '' && pendingBarcode !== item.barcode;
 
+                          // If no actual changes but counted was touched, just mark as counted
                           if (!stockChanged && !priceChanged && !costChanged && !barcodeChanged) {
+                            if (isSessionActive && countedTouched) {
+                              setCountedProductIds(prev => new Set([...prev, item.id]));
+                              // Clear the counted value
+                              setCountedValues(prev => {
+                                const newValues = { ...prev };
+                                delete newValues[item.id];
+                                return newValues;
+                              });
+                              showToast('success', `${item.name} sayıldı olarak işaretlendi`);
+                            }
                             return;
                           }
 
@@ -3832,6 +3896,7 @@ export default function App() {
                   );
                 })()}
 
+                </div>{/* End Main Card Content */}
               </div>
 
             );
