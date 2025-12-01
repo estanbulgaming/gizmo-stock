@@ -33,7 +33,7 @@ import { SettingsPage } from './components/pages/SettingsPage';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
-import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, deleteProduct, restoreProduct, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl } from './services/api';
+import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, deleteProduct, restoreProduct, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl, updateEnableStock } from './services/api';
 
 
 
@@ -536,9 +536,9 @@ export default function App() {
       });
 
       if (!response.ok) {
-
-        throw new Error(`HTTP error! status: ${response.status}`);
-
+        const errorText = await response.text();
+        addLog('error', 'STOCK_API', `HTTP ${response.status} hatası`, { status: response.status, body: errorText });
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
 
       addLog('success', 'STOCK_API', `Stok güncellendi: ID ${productId} → ${newStockCount}`);
@@ -3132,6 +3132,32 @@ export default function App() {
 
                         />
 
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-1">
+                        <Checkbox
+                          id={`enableStock-${item.id}`}
+                          checked={item.enableStock ?? false}
+                          onCheckedChange={async (checked) => {
+                            try {
+                              await updateEnableStock({ apiConfig, joinApi }, item.id, checked as boolean);
+                              setStockData(prev => prev.map(p =>
+                                p.id === item.id ? { ...p, enableStock: checked as boolean } : p
+                              ));
+                              addLog('success', 'STOCK_ENABLE', `Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}: ${item.name}`);
+                              showToast('success', `${item.name} - Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}`);
+                            } catch (error) {
+                              addLog('error', 'STOCK_ENABLE', `Stok takibi değiştirilemedi: ${item.name}`, error);
+                              showToast('error', `Stok takibi değiştirilemedi`);
+                            }
+                          }}
+                        />
+                        <label htmlFor={`enableStock-${item.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                          {t('item.enableStock')}
+                        </label>
+                        {!item.enableStock && (
+                          <span className="text-xs text-orange-500">({t('item.stockDisabled')})</span>
+                        )}
                       </div>
 
                     </div>
