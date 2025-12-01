@@ -1,106 +1,98 @@
-# Stok Yönetim Sistemi
+# Stock Management System
 
-Yerel stok yönetimi ve sayım uygulaması. React + TypeScript + Tailwind CSS ile geliştirilmiş, Docker ile containerize edilmiş modern bir web uygulamasıdır.
+Local stock management and counting application. Built with React + TypeScript + Tailwind CSS, containerized with Docker.
 
-## 🚀 Özellikler
+## Features
 
-- **Stok Yönetimi**: Ürün stok sayılarını görüntüleme ve güncelleme
-- **Fiyat Yönetimi**: Ürün fiyatlarını toplu güncelleme
-- **Maliyet Yönetimi**: Ürün maliyet bilgilerini düzenleme
-- **Barkod Yönetimi**: Ürün barkodlarını güncelleme
-- **Fiziki Sayım**: Gerçek stok sayımı ve fark hesaplama
-- **Stok Ekleme**: Mevcut stoğa yeni ürün ekleme
-- **API Entegrasyonu**: REST API ile stok, fiyat ve maliyet güncelleme
-- **Kategori Filtreleme**: Ürün gruplarına göre filtreleme
-- **Geçmiş Takibi**: Stok değişiklik geçmişi ve raporlama
-- **Responsive Design**: Mobil ve desktop uyumlu arayüz
-- **Sistem Logları**: Detaylı işlem ve hata logları
+- **Stock Management**: View and update product stock counts
+- **Price Management**: Bulk update product prices
+- **Cost Management**: Edit product cost information
+- **Barcode Management**: Update product barcodes
+- **Physical Counting**: Real stock counting with difference calculation
+- **Stock Addition**: Add new products to existing stock
+- **API Integration**: REST API for stock, price and cost updates
+- **Category Filtering**: Filter by product groups
+- **History Tracking**: Stock change history and reporting
+- **Responsive Design**: Mobile and desktop compatible interface
+- **System Logs**: Detailed operation and error logs
 
-## 🛠️ Teknolojiler
+## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS v4
 - **UI Components**: Radix UI, Lucide Icons
 - **Build Tool**: Vite
 - **Container**: Docker + Nginx
-- **Styling**: Tailwind CSS v4
+- **Testing**: Vitest
 
-## 📦 Kurulum
+## Installation
 
-### Manuel Kurulum
+### Manual Setup
 
-1. **Projeyi klonlayın:**
-   ```bash
-   git clone [repository-url]
-   cd stok-yonetim-sistemi
-   ```
+```bash
+# Clone the repository
+git clone [repository-url]
+cd gizmo-stock
 
-2. **Bağımlılıkları yükleyin:**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. **Geliştirme modunda çalıştırın:**
-   ```bash
-   npm run dev
-   ```
-   Uygulama http://localhost:5173 adresinde çalışacak.
+# Run in development mode
+npm run dev
+```
 
-### Docker ile Kurulum
+Application runs at http://localhost:5173
 
-1. **Docker image oluşturun:**
-   ```bash
-   npm run docker:build
-   ```
+### Docker Setup
 
-2. **Container'ı çalıştırın:**
-   ```bash
-   npm run docker:run
-   ```
-   Uygulama http://localhost:3000 adresinde çalışacak.
+```bash
+# Build Docker image
+npm run docker:build
 
-### Docker Compose ile Kurulum
+# Run container
+npm run docker:run
+```
 
-1. **Servisleri başlatın:**
-   ```bash
-   npm run docker:compose
-   ```
+Application runs at http://localhost:3000
 
-2. **Build ile başlatın:**
-   ```bash
-   npm run docker:compose:build
-   ```
+### Docker Compose
 
-3. **Durdurma:**
-   ```bash
-   npm run docker:stop
-   ```
+```bash
+# Start services
+npm run docker:compose
 
-## ⚙️ API Yapılandırması
+# Start with build
+npm run docker:compose:build
 
-Uygulama ayarlar sayfasından aşağıdaki API parametrelerini yapılandırabilirsiniz:
+# Stop
+npm run docker:stop
+```
 
-- **Sunucu IP**: API sunucu adresi (örn: 192.168.1.5)
-- **Kullanıcı Adı/Şifre**: Basic authentication bilgileri
-- **Endpoints**: Ürünler ve kategoriler için endpoint'ler
-- **Pagination**: Sayfa başı ürün sayısı limiti
+## API Configuration
+
+Configure API parameters from the settings page:
+
+- **Server IP**: API server address (e.g., 192.168.1.5)
+- **Username/Password**: Basic authentication credentials
+- **Endpoints**: Products and categories endpoints
+- **Pagination**: Products per page limit
 
 ### API Endpoints
 
 ```bash
-# Ürün listesi
+# Product list
 GET http://[IP]/api/v2.0/products?IsDeleted=false&EnableStock=true&Pagination.Limit=500
 
-# Kategori listesi
+# Category list
 GET http://[IP]/api/v2.0/productgroups
 
-# Stok güncelleme
+# Stock update
 POST http://[IP]/api/stock/[PRODUCT_ID]/[NEW_STOCK_COUNT]
 
-# Fiyat/Maliyet/Barkod güncelleme
-# Önce ürün bilgisini al
+# Price/Cost/Barcode update
+# First fetch product data
 GET http://[IP]/api/v2.0/products/[PRODUCT_ID]
 
-# Sonra tüm alanlarla birlikte güncelle
+# Then update with ALL fields
 PUT http://[IP]/api/v2.0/products
 Content-Type: application/json
 {
@@ -109,14 +101,16 @@ Content-Type: application/json
   "guid": "...",
   "productImages": [],
   "productGroupId": 13,
-  "name": "Ürün Adı",
+  "name": "Product Name",
   "price": 44.00,
   "cost": 19.99,
   "barcode": "1234567890"
 }
 ```
 
-**Önemli:** Fiyat, maliyet veya barkod güncellerken API'nin döndüğü response formatına dikkat edin:
+**Important**: When updating price, cost or barcode, you MUST send ALL required fields. Partial updates are NOT supported.
+
+API response format:
 ```json
 {
   "result": { "id": 10, "name": "...", "price": 40, ... },
@@ -124,136 +118,136 @@ Content-Type: application/json
   "isError": false
 }
 ```
-Ürün verisi `result` objesi içinde gelir.
 
-## 🔧 Geliştirme
+## Development
 
-### Mevcut npm Scripts
+### Available Scripts
 
 ```bash
-npm run dev          # Geliştirme modu
+npm run dev          # Development mode
 npm run build        # Production build
-npm run preview      # Build önizleme
-npm run lint         # ESLint kontrolü
-npm run docker:build # Docker image oluştur
-npm run docker:run   # Docker container çalıştır
+npm run preview      # Build preview
+npm run lint         # ESLint check
+npm run test:run     # Run tests
+npm run test:coverage # Run tests with coverage
+npm run docker:build # Build Docker image
+npm run docker:run   # Run Docker container
 ```
 
-Not: Vite preview API proxy yapmaz. API çağrıları için ya CORS'u backend'de açın ya da Docker/Nginx ile prod proxy kullanın. Geliştirme sırasında API için Vite proxy (npm run dev) önerilir.
+Note: Vite preview doesn't proxy API. Either enable CORS on backend or use Docker/Nginx for production proxy.
 
-### Linting ve TypeScript
+### Folder Structure
 
-- Proje ESLint + TypeScript ile yapılandırıldı. Lint çalıştırmak için:
+```
+components/           # React components
+├── ui/               # Radix UI components
+├── figma/            # Figma import components
+└── NumpadInput.tsx   # Custom numpad input
+services/             # API services
+├── api.ts            # Gizmo API functions
+└── __tests__/        # API contract tests
+types/                # TypeScript types
+├── stock.ts          # Stock data types
+└── gizmo-api.ts      # Gizmo API response types
+hooks/                # Custom React hooks
+i18n/                 # Internationalization
+styles/               # CSS files
+└── globals.css       # Global Tailwind CSS (v4)
+App.tsx               # Main application component
+main.tsx              # Application entry point
+```
+
+## Testing
+
+The project includes comprehensive API contract tests to prevent breaking changes:
 
 ```bash
-npm run lint
+# Run all tests
+npm run test:run
+
+# Run API tests only
+npm run test:run -- services/__tests__/api.test.ts
+
+# Run with coverage
+npm run test:coverage
 ```
 
-- ESLint config: `.eslintrc.cjs`
-- TS config: `tsconfig.json`
-- Ignore dosyası: `.eslintignore`
+### Test Coverage Requirements
 
-### Klasör Yapısı
+- Services folder requires minimum 70% coverage
+- API contract tests verify Gizmo API integration
+- Tests run automatically in CI/CD pipeline
 
-```
-components/           # React bileşenleri
-├── ui/               # Radix UI bileşenleri
-├── figma/            # Figma import bileşenleri
-└── NumpadInput.tsx   # Özel numpad input
-styles/               # CSS dosyaları
-└── globals.css       # Global Tailwind CSS (Tailwind v4)
-App.tsx               # Ana uygulama bileşeni
-main.tsx              # Uygulama giriş noktası
-```
-
-## 🐳 Docker Yapılandırması
+## Docker Configuration
 
 ### Dockerfile
-- **Multi-stage build** ile optimize edilmiş image
-- **Nginx Alpine** ile hafif production image
-- **Health check** ile container sağlık kontrolü
-- **Gzip compression** ile performans optimizasyonu
+- Multi-stage build for optimized image
+- Nginx Alpine for lightweight production image
+- Health check for container monitoring
+- Gzip compression for performance
 
-### Nginx Yapılandırması
-- SPA routing desteği
+### Nginx Configuration
+- SPA routing support
 - Static asset caching
 - Security headers
-- CORS desteği
+- CORS support
 
-## 📱 Kullanım
+## Usage
 
-1. **Ürünleri Yükle**: API'den ürün listesini çekin
-2. **Stok Sayımı**: Fiziki sayım değerlerini girin
-3. **Stok Ekleme**: Yeni ürün eklemek için "Eklenen" alanını kullanın
-4. **Fiyat/Maliyet Güncelleme**: "Fiyat - Yeni" ve "Maliyet - Yeni" alanlarına değer girin
-5. **Barkod Güncelleme**: Ürün barkodlarını düzenleyin
-6. **Fark Kontrolü**: Sistem otomatik fark hesaplar
-7. **Değişiklikleri Uygula**: API ile stok, fiyat ve maliyet güncellemelerini gönderin
-8. **Geçmiş İnceleme**: Sayım geçmişini ve raporları görüntüleyin
+1. **Load Products**: Fetch product list from API
+2. **Stock Counting**: Enter physical count values
+3. **Stock Addition**: Use "Added" field to add new products
+4. **Price/Cost Update**: Enter values in "Price - New" and "Cost - New" fields
+5. **Barcode Update**: Edit product barcodes
+6. **Difference Check**: System auto-calculates differences
+7. **Apply Changes**: Send stock, price and cost updates via API
+8. **History Review**: View counting history and reports
 
-## 🔒 Güvenlik
+## Security
 
-- HTTPS zorunlu (production)
+- HTTPS required (production)
 - Basic Authentication
-- CORS yapılandırması
-- XSS koruması
+- CORS configuration
+- XSS protection
 - Content Security Policy
 
-## 📊 Performans
+## Troubleshooting
 
-- Code splitting ile optimize yükleme
-- Lazy loading
-- Service Worker desteği (opsiyonel)
-- CDN ready static assets
-
-## 🐛 Sorun Giderme
-
-### Docker Build Hatası
+### Docker Build Error
 ```bash
-# Cache temizleme
+# Clear cache
 docker system prune -a
 
-# Image'ı force rebuild
-docker build --no-cache -t stok-yonetim .
+# Force rebuild
+docker build --no-cache -t gizmo-stock .
 ```
 
-### API Bağlantı Hatası
-- IP adresini kontrol edin
-- Güvenlik duvarı ayarlarını kontrol edin  
-- CORS ayarlarını kontrol edin
-- Network bağlantısını test edin
+### API Connection Error
+- Check IP address
+- Verify firewall settings
+- Check CORS configuration
+- Test network connection
 
-### Log Kontrolü
-- Sistem logları ayarlar sayfasında görüntülenebilir
-- Browser console'da detaylı hatalar
-- Docker logs: `docker logs stok-yonetim-app`
+### Log Check
+- System logs available in settings page
+- Browser console for detailed errors
+- Docker logs: `docker logs gizmo-stock-app`
 
-## 📄 Lisans
+## License
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+This project is licensed under the MIT License.
 
-## 🤝 Katkıda Bulunma
+## Contributing
 
-1. Fork yapın
-2. Feature branch oluşturun
-3. Değişikliklerinizi commit edin
-4. Pull request gönderin
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Submit a pull request
 
-## 📞 Destek
+## Notes
 
-Sorularınız için:
-- Issues sayfasını kullanın
-- Sistem loglarını kontrol edin
-- Docker loglarını inceleyin
-
----
-
-## Notlar ve İyileştirmeler
-
-- Tailwind CSS v4 kullanımı için PostCSS eklentisi zorunludur: `@tailwindcss/postcss`.
-  - `postcss.config.js` içinde `plugins: [require('@tailwindcss/postcss')(), require('autoprefixer')()]` benzeri yapı kullanılır.
-- Geliştirme proxy hedefi `.env` ile yönetilebilir:
+- Tailwind CSS v4 requires PostCSS plugin: `@tailwindcss/postcss`
+- Development proxy target can be managed via `.env`:
   - `VITE_API_PROXY_TARGET=http://192.168.1.5`
-  - `vite.config.ts` bu değeri otomatik okur.
-- Docker üretim imajı çok aşamalıdır (Node builder + Nginx). Context şişmesini önlemek için `.dockerignore` eklenmiştir.
-- Animasyon yardımcı sınıfları için `tailwindcss-animate` eklendi; `styles/globals.css` içinde `@plugin "tailwindcss-animate";` tanımlıdır.
+- Docker production image is multi-stage (Node builder + Nginx)
+- Animation utilities via `tailwindcss-animate` plugin
