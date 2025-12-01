@@ -96,14 +96,14 @@ describe('withRetry', () => {
       onRetry,
     });
 
-    // Check that delays increase (with jitter, they should be roughly 100, 200, 400)
+    // Check that delays increase (with jitter ±20%, they should be roughly 100, 200, 400)
     const delays = onRetry.mock.calls.map(call => call[2]);
-    expect(delays[0]).toBeGreaterThan(80);
-    expect(delays[0]).toBeLessThan(120);
-    expect(delays[1]).toBeGreaterThan(160);
-    expect(delays[1]).toBeLessThan(240);
-    expect(delays[2]).toBeGreaterThan(320);
-    expect(delays[2]).toBeLessThan(480);
+    expect(delays[0]).toBeGreaterThanOrEqual(80);
+    expect(delays[0]).toBeLessThanOrEqual(120);
+    expect(delays[1]).toBeGreaterThanOrEqual(160);
+    expect(delays[1]).toBeLessThanOrEqual(240);
+    expect(delays[2]).toBeGreaterThanOrEqual(320);
+    expect(delays[2]).toBeLessThanOrEqual(480);
   });
 
   it('should cap delay at maxDelay', async () => {
