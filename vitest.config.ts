@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -20,7 +20,7 @@ export default defineConfig({
       ],
       thresholds: {
         // Enforce coverage for API services (critical for Gizmo API stability)
-        'services/**/*.ts': {
+        'src/services/**/*.ts': {
           statements: 70,
           branches: 60,
           functions: 70,
