@@ -30,6 +30,7 @@ import { useCountingSession, downloadSessionReport } from './hooks/useCountingSe
 import { ToastContainer } from './components/Toast';
 import { CountingPage } from './components/pages/CountingPage';
 import { SettingsPage } from './components/pages/SettingsPage';
+import { BarcodeScanButton } from './components/BarcodeScanner';
 
 import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
@@ -2800,6 +2801,8 @@ export default function App() {
                 />
 
               </div>
+
+              <BarcodeScanButton onScan={(barcode) => setSearchQuery(barcode)} />
 
               {searchQuery && (
 
