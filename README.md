@@ -139,22 +139,24 @@ Note: Vite preview doesn't proxy API. Either enable CORS on backend or use Docke
 ### Folder Structure
 
 ```
-components/           # React components
-├── ui/               # Radix UI components
-├── figma/            # Figma import components
-└── NumpadInput.tsx   # Custom numpad input
-services/             # API services
-├── api.ts            # Gizmo API functions
-└── __tests__/        # API contract tests
-types/                # TypeScript types
-├── stock.ts          # Stock data types
-└── gizmo-api.ts      # Gizmo API response types
-hooks/                # Custom React hooks
-i18n/                 # Internationalization
-styles/               # CSS files
-└── globals.css       # Global Tailwind CSS (v4)
-App.tsx               # Main application component
-main.tsx              # Application entry point
+src/
+├── components/       # React components
+│   ├── ui/           # Radix UI components
+│   ├── figma/        # Figma import components
+│   ├── pages/        # Page components
+│   └── NumpadInput.tsx
+├── services/         # API services
+│   ├── api.ts        # Gizmo API functions
+│   └── __tests__/    # API contract tests
+├── types/            # TypeScript types
+├── hooks/            # Custom React hooks
+├── utils/            # Utility functions
+├── i18n/             # Internationalization (TR, EN, RU, EL)
+├── styles/           # CSS files
+├── test/             # Test setup
+├── App.tsx           # Main application component
+├── main.tsx          # Application entry point
+└── index.css         # Root styles
 ```
 
 ## Testing
@@ -166,7 +168,7 @@ The project includes comprehensive API contract tests to prevent breaking change
 npm run test:run
 
 # Run API tests only
-npm run test:run -- services/__tests__/api.test.ts
+npm run test:run -- src/services/__tests__/api.test.ts
 
 # Run with coverage
 npm run test:coverage
