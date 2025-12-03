@@ -1,22 +1,12 @@
-﻿import React, { useEffect, useState, useMemo, useCallback, useDeferredValue } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useDeferredValue } from 'react';
 
 import { NumpadInput } from './components/NumpadInput';
 
-
-
-import { Card } from './components/ui/card';
-
 import { Button } from './components/ui/button';
-
-import { Input } from './components/ui/input';
-
 import { Label } from './components/ui/label';
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 
-import { Checkbox } from './components/ui/checkbox';
-
-import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check, ChevronDown, RotateCcw, Pencil, Package, Plus, Trash, Triangle, Equal } from 'lucide-react';
+import { Settings, RefreshCw, X, Search, ImageIcon, Filter, Undo2, Check, Pencil, Package, Plus, Trash, Triangle, Equal } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -33,7 +23,6 @@ import { SettingsPage } from './components/pages/SettingsPage';
 import { BarcodeScanButton } from './components/BarcodeScanner';
 import { ProductEditModal } from './components/ProductEditModal';
 
-import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
 import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, deleteProduct, restoreProduct, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl, updateEnableStock } from './services/api';
 
@@ -362,34 +351,6 @@ export default function App() {
     setAddedValues(prev => ({
       ...prev,
       [id]: addedValue
-    }));
-  }, []);
-
-  const handlePriceChange = useCallback((id: string, value: number | '') => {
-    setPriceValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleCostChange = useCallback((id: string, value: number | '') => {
-    setCostValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleBarcodeChange = useCallback((id: string, value: string) => {
-    setBarcodeValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleNameChange = useCallback((id: string, value: string) => {
-    setNameValues(prev => ({
-      ...prev,
-      [id]: value
     }));
   }, []);
 
@@ -2936,46 +2897,6 @@ export default function App() {
               const totalAfterCount = countedValue !== null ? countedValue + addedValue : item.count + addedValue;
 
               const countDiff = countedValue !== null ? countedValue - item.count : null;
-
-              const enteredPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
-
-              const currentPrice = typeof item.price === 'number' ? item.price : null;
-
-              const cost = typeof item.cost === 'number' ? item.cost : null;
-
-              const enteredPreviousPrice: number | null = typeof previousPriceValues[item.id] === 'number' ? previousPriceValues[item.id] as number : null;
-
-              const previousPrice = enteredPreviousPrice ?? (typeof item.previousPrice === 'number' ? item.previousPrice : null);
-
-              const enteredNextPrice: number | null = typeof nextPriceValues[item.id] === 'number' ? nextPriceValues[item.id] as number : null;
-
-              const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
-
-              const _priceDiff = enteredPrice !== null && currentPrice !== null
-
-                ? enteredPrice - currentPrice
-
-                : enteredPrice !== null && currentPrice === null
-
-                  ? enteredPrice
-
-                  : null;
-
-              const _priceChangeDiff = previousPrice !== null && nextPrice !== null
-
-                ? nextPrice - previousPrice
-
-                : null;
-
-              const enteredCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
-
-              const enteredPreviousCost: number | null = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] as number : null;
-
-              const _previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
-
-              const enteredNextCost: number | null = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] as number : null;
-
-              const _nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
 
               return (
 
