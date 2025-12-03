@@ -1,22 +1,12 @@
-﻿import React, { useEffect, useState, useMemo, useCallback, useDeferredValue } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useDeferredValue } from 'react';
 
 import { NumpadInput } from './components/NumpadInput';
 
-
-
-import { Card } from './components/ui/card';
-
 import { Button } from './components/ui/button';
-
-import { Input } from './components/ui/input';
-
 import { Label } from './components/ui/label';
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 
-import { Checkbox } from './components/ui/checkbox';
-
-import { Download, Settings, RefreshCw, Eye, EyeOff, X, Search, ImageIcon, Filter, Terminal, Trash2, Copy, Undo2, Check, ChevronDown, RotateCcw } from 'lucide-react';
+import { Settings, RefreshCw, X, Search, ImageIcon, Filter, Undo2, Check, Pencil, Package, Plus, Trash, Triangle, Equal } from 'lucide-react';
 
 import { Progress } from './components/ui/progress';
 
@@ -31,8 +21,8 @@ import { ToastContainer } from './components/Toast';
 import { CountingPage } from './components/pages/CountingPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { BarcodeScanButton } from './components/BarcodeScanner';
+import { ProductEditModal } from './components/ProductEditModal';
 
-import { formatPrice } from './utils/product';
 import { ProductGroup, StockChange, StockData, SystemLogEntry } from './types/stock';
 import { fetchProductGroups as fetchProductGroupsService, fetchProducts as fetchProductsService, fetchProductImageUrl, deleteProduct, restoreProduct, updatePreviousPrice, updateNextPrice, updatePreviousCost, updateNextCost, getCachedImageUrl, setCachedImageUrl, updateEnableStock } from './services/api';
 
@@ -211,6 +201,8 @@ export default function App() {
 
   const [enlargedImage, setEnlargedImage] = useState<{ url: string; name: string } | null>(null);
 
+  const [editingProduct, setEditingProduct] = useState<StockData | null>(null);
+
   const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
 
   const [selectedProductGroups, setSelectedProductGroups] = useState<number[]>([]);
@@ -359,34 +351,6 @@ export default function App() {
     setAddedValues(prev => ({
       ...prev,
       [id]: addedValue
-    }));
-  }, []);
-
-  const handlePriceChange = useCallback((id: string, value: number | '') => {
-    setPriceValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleCostChange = useCallback((id: string, value: number | '') => {
-    setCostValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleBarcodeChange = useCallback((id: string, value: string) => {
-    setBarcodeValues(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
-
-  const handleNameChange = useCallback((id: string, value: string) => {
-    setNameValues(prev => ({
-      ...prev,
-      [id]: value
     }));
   }, []);
 
@@ -2934,46 +2898,6 @@ export default function App() {
 
               const countDiff = countedValue !== null ? countedValue - item.count : null;
 
-              const enteredPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
-
-              const currentPrice = typeof item.price === 'number' ? item.price : null;
-
-              const cost = typeof item.cost === 'number' ? item.cost : null;
-
-              const enteredPreviousPrice: number | null = typeof previousPriceValues[item.id] === 'number' ? previousPriceValues[item.id] as number : null;
-
-              const previousPrice = enteredPreviousPrice ?? (typeof item.previousPrice === 'number' ? item.previousPrice : null);
-
-              const enteredNextPrice: number | null = typeof nextPriceValues[item.id] === 'number' ? nextPriceValues[item.id] as number : null;
-
-              const nextPrice = enteredNextPrice ?? (typeof item.nextPrice === 'number' ? item.nextPrice : null);
-
-              const _priceDiff = enteredPrice !== null && currentPrice !== null
-
-                ? enteredPrice - currentPrice
-
-                : enteredPrice !== null && currentPrice === null
-
-                  ? enteredPrice
-
-                  : null;
-
-              const _priceChangeDiff = previousPrice !== null && nextPrice !== null
-
-                ? nextPrice - previousPrice
-
-                : null;
-
-              const enteredCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
-
-              const enteredPreviousCost: number | null = typeof previousCostValues[item.id] === 'number' ? previousCostValues[item.id] as number : null;
-
-              const _previousCost = enteredPreviousCost ?? (typeof item.previousCost === 'number' ? item.previousCost : null);
-
-              const enteredNextCost: number | null = typeof nextCostValues[item.id] === 'number' ? nextCostValues[item.id] as number : null;
-
-              const _nextCost = enteredNextCost ?? (typeof item.nextCost === 'number' ? item.nextCost : null);
-
               return (
 
               <div key={item.id} className={`border rounded-lg transition-colors flex ${
@@ -3014,687 +2938,116 @@ export default function App() {
                 {/* Main Card Content */}
                 <div className={`flex-1 p-3 sm:p-4 ${isSessionActive ? '' : 'rounded-lg'}`}>
 
-                {/* Delete/Restore Button & Enable Stock */}
-                <div className="flex justify-between items-center mb-2">
-                  <span></span>
-                  <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 mr-2">
-                    <Checkbox
-                      id={`enableStock-${item.id}`}
-                      checked={item.enableStock ?? false}
-                      onCheckedChange={async (checked) => {
-                        try {
-                          await updateEnableStock({ apiConfig, joinApi }, item.id, checked as boolean);
-                          setStockData(prev => prev.map(p =>
-                            p.id === item.id ? { ...p, enableStock: checked as boolean } : p
-                          ));
-                          addLog('success', 'STOCK_ENABLE', `Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}: ${item.name}`);
-                          showToast('success', `${item.name} - Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}`);
-                        } catch (error) {
-                          addLog('error', 'STOCK_ENABLE', `Stok takibi değiştirilemedi: ${item.name}`, error);
-                          showToast('error', `Stok takibi değiştirilemedi`);
-                        }
-                      }}
+                {/* Header: Image, Name, Edit Button */}
+                <div className="flex items-start gap-3 mb-3">
+                  {/* Product Image */}
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
+                    {item.imageUrl ? (
+                      <ImageWithFallback
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setEnlargedImage({
+                          url: item.imageUrl!,
+                          name: item.name
+                        })}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted rounded border flex items-center justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => loadProductImage(item.id)}
+                          className="h-full w-full p-1"
+                        >
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product Name & Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm sm:text-base truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.barcode || 'Barkod yok'}</p>
+                    {!item.enableStock && (
+                      <span className="text-xs text-orange-500">Stok takibi kapalı</span>
+                    )}
+                  </div>
+
+                  {/* Edit Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingProduct(item)}
+                    className="h-8 w-8 p-0 flex-shrink-0"
+                    title="Düzenle"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Stock Section - Compact with Icons */}
+                <div className="flex items-center gap-2 flex-wrap text-sm">
+                  {/* Current Stock */}
+                  <div className="flex items-center gap-1">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <span className="bg-muted px-2 py-1 rounded min-w-[40px] text-center">{item.count}</span>
+                  </div>
+
+                  <span className="text-muted-foreground">→</span>
+
+                  {/* Counted */}
+                  <NumpadInput
+                    value={countedValues[item.id] ?? ''}
+                    onChange={(value) => handleCountedChange(item.id, value)}
+                    placeholder="0"
+                    defaultValue={item.count}
+                    className="w-16 sm:w-20"
+                  />
+
+                  {/* Added */}
+                  <div className="flex items-center gap-1">
+                    <Plus className="h-4 w-4 text-green-600" />
+                    <NumpadInput
+                      value={addedValues[item.id] || ''}
+                      onChange={(value) => handleAddedChange(item.id, value)}
+                      placeholder="0"
+                      className="w-14 sm:w-16"
                     />
-                    <label htmlFor={`enableStock-${item.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                      {t('item.enableStock')}
-                    </label>
-                  </div>
-                  {item.isDeleted ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
-                      onClick={async () => {
-                        try {
-                          await restoreProduct({ apiConfig, joinApi }, item.id);
-                          setStockData(prev => prev.map(p =>
-                            p.id === item.id ? { ...p, isDeleted: false } : p
-                          ));
-                          addLog('success', 'RESTORE', `Ürün geri alındı: ${item.name}`);
-                          showToast('success', `${item.name} geri alındı`);
-                        } catch (error) {
-                          addLog('error', 'RESTORE', `Geri alma hatası: ${item.name}`, error);
-                          showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
-                        }
-                      }}
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      {t('controls.restore')}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={async () => {
-                        if (!confirm(t('confirm.deleteProduct', { name: item.name }))) return;
-                        try {
-                          await deleteProduct({ apiConfig, joinApi }, item.id);
-                          setStockData(prev => prev.map(p =>
-                            p.id === item.id ? { ...p, isDeleted: true } : p
-                          ));
-                          addLog('success', 'DELETE', `Ürün silindi: ${item.name}`);
-                          showToast('success', `${item.name} silindi`);
-                        } catch (error) {
-                          addLog('error', 'DELETE', `Silme hatası: ${item.name}`, error);
-                          showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      {t('controls.delete')}
-                    </Button>
-                  )}
-                  </div>
-                </div>
-
-                {/* Mobile Layout */}
-
-                <div className="sm:hidden space-y-3">
-
-                  <div className="flex gap-3">
-
-                    {/* Product Image - Mobile */}
-
-                    <div className="w-16 h-16 flex-shrink-0">
-
-                      {item.imageUrl ? (
-
-                        <ImageWithFallback
-
-                          src={item.imageUrl}
-
-                          alt={item.name}
-
-                          className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-
-                          onClick={() => setEnlargedImage({
-
-                            url: item.imageUrl!,
-
-                            name: item.name
-
-                          })}
-
-                        />
-
-                      ) : (
-
-                        <div className="w-16 h-16 bg-muted rounded border flex flex-col items-center justify-center">
-
-                          <Button
-
-                            variant="ghost"
-
-                            size="sm"
-
-                            onClick={() => loadProductImage(item.id)}
-
-                            className="h-full w-full p-1 text-xs"
-
-                          >
-
-                            <div className="text-center">
-
-                              <ImageIcon className="h-4 w-4 mx-auto mb-1" />
-
-                              <span className="text-xs">Göster</span>
-
-                            </div>
-
-                          </Button>
-
-                        </div>
-
-                      )}
-
-                    </div>
-
-                    
-
-                    <div className="flex-1 min-w-0">
-
-                      <p className="text-xs text-muted-foreground">{t('item.name')}</p>
-
-                      <Input
-
-                        value={nameValues[item.id] ?? item.name}
-
-                        onChange={(e) => handleNameChange(item.id, e.target.value)}
-
-                        placeholder={item.name}
-
-                        className="text-sm h-7 px-2 font-medium"
-
-                      />
-
-                      <p className="text-xs text-muted-foreground mt-1">ID: {item.id}</p>
-
-                      <div className="flex items-center gap-2 mt-1">
-
-                        <p className="text-xs text-muted-foreground">{t('item.barcode')}:</p>
-
-                        <Input
-
-                          value={barcodeValues[item.id] ?? item.barcode}
-
-                          onChange={(e) => handleBarcodeChange(item.id, e.target.value)}
-
-                          placeholder={item.barcode}
-
-                          className="text-xs h-6 px-2"
-
-                        />
-
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1">
-                        <Checkbox
-                          id={`enableStock-${item.id}`}
-                          checked={item.enableStock ?? false}
-                          onCheckedChange={async (checked) => {
-                            try {
-                              await updateEnableStock({ apiConfig, joinApi }, item.id, checked as boolean);
-                              setStockData(prev => prev.map(p =>
-                                p.id === item.id ? { ...p, enableStock: checked as boolean } : p
-                              ));
-                              addLog('success', 'STOCK_ENABLE', `Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}: ${item.name}`);
-                              showToast('success', `${item.name} - Stok takibi ${checked ? 'açıldı' : 'kapatıldı'}`);
-                            } catch (error) {
-                              addLog('error', 'STOCK_ENABLE', `Stok takibi değiştirilemedi: ${item.name}`, error);
-                              showToast('error', `Stok takibi değiştirilemedi`);
-                            }
-                          }}
-                        />
-                        <label htmlFor={`enableStock-${item.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                          {t('item.enableStock')}
-                        </label>
-                        {!item.enableStock && (
-                          <span className="text-xs text-orange-500">({t('item.stockDisabled')})</span>
-                        )}
-                      </div>
-
-                    </div>
-
                   </div>
 
-
-
-                  {/* Fiyat Bilgileri - İsim Altında */}
-
-                  <div className="grid grid-cols-4 gap-2">
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(currentPrice)}</p>
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredPrice ?? ''}
-
-                        onChange={(value) => handlePriceChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Maliyet</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{formatPrice(cost)}</p>
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">Yeni</p>
-
-                      <NumpadInput
-
-                        value={enteredCost ?? ''}
-
-                        onChange={(value) => handleCostChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
+                  {/* Waste */}
+                  <div className="flex items-center gap-1">
+                    <Trash className="h-4 w-4 text-red-500" />
+                    <NumpadInput
+                      value={wasteValues[item.id] || ''}
+                      onChange={(value) => setWasteValues(prev => ({ ...prev, [item.id]: value === '' ? '' : Number(value) }))}
+                      placeholder="0"
+                      className="w-14 sm:w-16"
+                    />
                   </div>
 
-
-
-                  {/* Stok Bilgileri - Fiyat Altında */}
-
-                  <div className="grid grid-cols-2 gap-3">
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Mevcut</p>
-
-                      <p className="bg-muted px-2 py-1 rounded text-sm">{item.count}</p>
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">Toplam</p>
-
-                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded text-sm">
-
-                        {totalAfterCount}
-
-                      </p>
-
-                    </div>
-
+                  {/* Diff */}
+                  <div className="flex items-center gap-1">
+                    <Triangle className="h-3 w-3 text-muted-foreground" />
+                    <span className={`px-2 py-1 rounded min-w-[40px] text-center text-xs ${
+                      countDiff !== null
+                        ? countDiff > 0 ? 'bg-green-100 text-green-800' :
+                          countDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
+                        : 'bg-muted'
+                    }`}>
+                      {countDiff !== null ? `${countDiff > 0 ? '+' : ''}${countDiff}` : '-'}
+                    </span>
                   </div>
 
-
-
-                  <div className="grid grid-cols-3 gap-2">
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">Sayılan</p>
-
-                      <NumpadInput
-
-                        value={countedValues[item.id] ?? ''}
-
-                        onChange={(value) => handleCountedChange(item.id, value)}
-
-                        placeholder="0"
-
-                        defaultValue={item.count}
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">{t('item.added')}</p>
-
-                      <NumpadInput
-
-                        value={addedValues[item.id] || ''}
-
-                        onChange={(value) => handleAddedChange(item.id, value)}
-
-                        placeholder="0"
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs text-muted-foreground mb-1">{t('item.waste')}</p>
-
-                      <NumpadInput
-
-                        value={wasteValues[item.id] || ''}
-
-                        onChange={(value) => setWasteValues(prev => ({ ...prev, [item.id]: value === '' ? '' : Number(value) }))}
-
-                        placeholder="0"
-
-                        className="text-xs"
-
-                      />
-
-                    </div>
-
-                    <div className="text-center">
-
-                      <p className="text-xs text-muted-foreground mb-1">{t('item.diff')}</p>
-
-                      <p className={`px-1 py-1 rounded text-xs ${
-
-                        countDiff !== null
-
-                          ? countDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                            countDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
-
-                          : 'bg-muted'
-
-                      }`}>
-
-                        {countDiff !== null
-
-                          ? `${countDiff > 0 ? '+' : ''}${countDiff}`
-
-                          : '-'
-
-                        }
-
-                      </p>
-
-                    </div>
-
+                  {/* Total */}
+                  <div className="flex items-center gap-1">
+                    <Equal className="h-4 w-4 text-muted-foreground" />
+                    <span className="bg-primary text-primary-foreground px-2 py-1 rounded min-w-[40px] text-center">
+                      {totalAfterCount}
+                    </span>
                   </div>
-
-                </div>
-
-
-
-                {/* Desktop Layout */}
-
-                <div className="hidden sm:block">
-
-                  {/* Product Info Row */}
-
-                  <div className="flex items-center gap-3 mb-3">
-
-                    {/* Product Image - Desktop */}
-
-                    <div className="w-16 h-16 flex-shrink-0">
-
-                      {item.imageUrl ? (
-
-                        <ImageWithFallback
-
-                          src={item.imageUrl}
-
-                          alt={item.name}
-
-                          className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-
-                          onClick={() => setEnlargedImage({
-
-                            url: item.imageUrl!,
-
-                            name: item.name
-
-                          })}
-
-                        />
-
-                      ) : (
-
-                        <div className="w-16 h-16 bg-muted rounded border flex flex-col items-center justify-center">
-
-                          <Button
-
-                            variant="ghost"
-
-                            size="sm"
-
-                            onClick={() => loadProductImage(item.id)}
-
-                            className="h-full w-full p-1 text-xs"
-
-                          >
-
-                            <div className="text-center">
-
-                              <ImageIcon className="h-3 w-3 mx-auto mb-1" />
-
-                              <span className="text-xs">Göster</span>
-
-                            </div>
-
-                          </Button>
-
-                        </div>
-
-                      )}
-
-                    </div>
-
-
-
-                    <div className="flex-1 min-w-0">
-
-                      <p className="text-sm text-muted-foreground">{t('item.name')}</p>
-
-                      <Input
-
-                        value={nameValues[item.id] ?? item.name}
-
-                        onChange={(e) => handleNameChange(item.id, e.target.value)}
-
-                        placeholder={item.name}
-
-                        className="text-sm h-8 px-2 font-medium max-w-md"
-
-                      />
-
-                      <p className="text-sm text-muted-foreground mt-1">ID: {item.id}</p>
-
-                      <div className="flex items-center gap-2 mt-1">
-
-                        <p className="text-sm text-muted-foreground">{t('item.barcode')}:</p>
-
-                        <Input
-
-                          value={barcodeValues[item.id] ?? item.barcode}
-
-                          onChange={(e) => handleBarcodeChange(item.id, e.target.value)}
-
-                          placeholder={item.barcode}
-
-                          className="text-sm h-7 px-2 max-w-xs"
-
-                        />
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-
-                  {/* Desktop Price Section - Below Name */}
-
-                  <div className="flex items-center gap-3 text-sm mb-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">{t('item.price')}:</p>
-
-                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{formatPrice(currentPrice)}</p>
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[40px]">{t('item.new')}:</p>
-
-                      <NumpadInput
-
-                        value={enteredPrice ?? ''}
-
-                        onChange={(value) => handlePriceChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="w-20"
-
-                      />
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">Maliyet:</p>
-
-                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{formatPrice(cost)}</p>
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[40px]">{t('item.new')}:</p>
-
-                      <NumpadInput
-
-                        value={enteredCost ?? ''}
-
-                        onChange={(value) => handleCostChange(item.id, value)}
-
-                        placeholder="0.00"
-
-                        allowDecimal={true}
-
-                        step={0.01}
-
-                        className="w-20"
-
-                      />
-
-                    </div>
-
-                  </div>
-
-
-
-                  {/* Desktop Stock Section - Below Price */}
-
-                  <div className="flex items-center gap-3 text-sm">
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">Mevcut:</p>
-
-                      <p className="bg-muted px-2 py-1 rounded min-w-[60px]">{item.count}</p>
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">Sayılan:</p>
-
-                      <NumpadInput
-
-                        value={countedValues[item.id] ?? ''}
-
-                        onChange={(value) => handleCountedChange(item.id, value)}
-
-                        placeholder="0"
-
-                        defaultValue={item.count}
-
-                        className="w-20"
-
-                      />
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[40px]">Fark:</p>
-
-                      <p className={`px-2 py-1 rounded min-w-[60px] text-center ${
-
-                        countDiff !== null
-
-                          ? countDiff > 0 ? 'bg-green-100 text-green-800' :
-
-                            countDiff < 0 ? 'bg-red-100 text-red-800' : 'bg-muted'
-
-                          : 'bg-muted'
-
-                      }`}>
-
-                        {countDiff !== null
-
-                          ? `${countDiff > 0 ? '+' : ''}${countDiff}`
-
-                          : '-'
-
-                        }
-
-                      </p>
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">{t('item.added')}:</p>
-
-                      <NumpadInput
-
-                        value={addedValues[item.id] || ''}
-
-                        onChange={(value) => handleAddedChange(item.id, value)}
-
-                        placeholder="0"
-
-                        className="w-20"
-
-                      />
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[40px]">{t('item.waste')}:</p>
-
-                      <NumpadInput
-
-                        value={wasteValues[item.id] || ''}
-
-                        onChange={(value) => setWasteValues(prev => ({ ...prev, [item.id]: value === '' ? '' : Number(value) }))}
-
-                        placeholder="0"
-
-                        className="w-20"
-
-                      />
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                      <p className="text-muted-foreground min-w-[50px]">{t('item.total')}:</p>
-
-                      <p className="bg-primary text-primary-foreground px-2 py-1 rounded min-w-[60px] text-center">
-
-                        {totalAfterCount}
-
-                      </p>
-
-                    </div>
-
-                  </div>
-
                 </div>
 
                 {/* Action Buttons */}
@@ -3703,10 +3056,7 @@ export default function App() {
                   const countedTouched = countedValues[item.id] !== undefined && countedValues[item.id] !== '';
                   const hasOtherChanges =
                     (addedValues[item.id] !== undefined && addedValues[item.id] !== 0 && addedValues[item.id] !== '') ||
-                    (wasteValues[item.id] !== undefined && wasteValues[item.id] !== 0 && wasteValues[item.id] !== '') ||
-                    (priceValues[item.id] !== undefined && priceValues[item.id] !== '') ||
-                    (costValues[item.id] !== undefined && costValues[item.id] !== '') ||
-                    (barcodeValues[item.id] !== undefined && barcodeValues[item.id] !== item.barcode);
+                    (wasteValues[item.id] !== undefined && wasteValues[item.id] !== 0 && wasteValues[item.id] !== '');
 
                   if (!countedTouched && !hasOtherChanges) return null;
 
@@ -3714,28 +3064,13 @@ export default function App() {
                     <div className="mt-3 pt-3 border-t flex gap-2">
                       <Button
                         onClick={() => {
-                          // Reset all changes for this item
+                          // Reset stock changes for this item
                           setCountedValues(prev => {
                             const newValues = { ...prev };
                             delete newValues[item.id];
                             return newValues;
                           });
                           setAddedValues(prev => {
-                            const newValues = { ...prev };
-                            delete newValues[item.id];
-                            return newValues;
-                          });
-                          setPriceValues(prev => {
-                            const newValues = { ...prev };
-                            delete newValues[item.id];
-                            return newValues;
-                          });
-                          setCostValues(prev => {
-                            const newValues = { ...prev };
-                            delete newValues[item.id];
-                            return newValues;
-                          });
-                          setBarcodeValues(prev => {
                             const newValues = { ...prev };
                             delete newValues[item.id];
                             return newValues;
@@ -3755,33 +3090,24 @@ export default function App() {
                       </Button>
                       <Button
                         onClick={async () => {
-                          // Apply changes for this single item
+                          // Apply stock changes for this single item
                           const countedValue: number | null = typeof countedValues[item.id] === 'number' ? countedValues[item.id] as number : null;
                           const addedValue: number = typeof addedValues[item.id] === 'number' ? addedValues[item.id] as number : 0;
                           const wasteValue: number = typeof wasteValues[item.id] === 'number' ? wasteValues[item.id] as number : 0;
-                          const pendingPrice: number | null = typeof priceValues[item.id] === 'number' ? priceValues[item.id] as number : null;
-                          const pendingCost: number | null = typeof costValues[item.id] === 'number' ? costValues[item.id] as number : null;
-                          const pendingBarcode = barcodeValues[item.id] || null;
 
                           let finalCount = item.count;
                           if (countedValue !== null) {
-                            finalCount = countedValue + (addedValue as number);
+                            finalCount = countedValue + addedValue;
                           } else if (addedValue > 0) {
                             finalCount = item.count + addedValue;
                           }
 
                           const stockChanged = finalCount !== item.count;
-                          const previousPrice = typeof item.price === 'number' ? item.price : undefined;
-                          const priceChanged = pendingPrice !== null && (previousPrice === undefined || Math.abs(pendingPrice - previousPrice) > 0.0001);
-                          const previousCost = typeof item.cost === 'number' ? item.cost : undefined;
-                          const costChanged = pendingCost !== null && (previousCost === undefined || Math.abs(pendingCost - previousCost) > 0.0001);
-                          const barcodeChanged = pendingBarcode !== null && pendingBarcode.trim() !== '' && pendingBarcode !== item.barcode;
 
                           // If no actual changes but counted was touched, just mark as counted
-                          if (!stockChanged && !priceChanged && !costChanged && !barcodeChanged) {
+                          if (!stockChanged) {
                             if (isSessionActive && countedTouched) {
                               setCountedProductIds(prev => new Set([...prev, item.id]));
-                              // Clear the counted value
                               setCountedValues(prev => {
                                 const newValues = { ...prev };
                                 delete newValues[item.id];
@@ -3793,25 +3119,11 @@ export default function App() {
                           }
 
                           try {
-                            // Perform updates using existing functions
-                            if (stockChanged) {
-                              await updateProductStock(item.id, finalCount);
-                            }
-
-                            if (priceChanged) {
-                              await updateProductPrice(item.id, pendingPrice as number);
-                            }
-
-                            if (costChanged) {
-                              await updateProductCost(item.id, pendingCost as number);
-                            }
-
-                            if (barcodeChanged) {
-                              await updateProductBarcode(item.id, pendingBarcode as string);
-                            }
+                            await updateProductStock(item.id, finalCount);
 
                             // Add to counting session if active
                             if (isSessionActive) {
+                              const previousCost = typeof item.cost === 'number' ? item.cost : undefined;
                               const wasteCost = wasteValue > 0 && previousCost !== undefined
                                 ? wasteValue * previousCost
                                 : undefined;
@@ -3822,14 +3134,14 @@ export default function App() {
                                 barcode: item.barcode,
                                 previousCount: item.count,
                                 countedValue: countedValue ?? undefined,
-                                addedValue: addedValue as number,
+                                addedValue: addedValue,
                                 wasteValue: wasteValue > 0 ? wasteValue : undefined,
                                 wasteCost,
                                 finalCount: finalCount,
-                                previousPrice,
-                                newPrice: priceChanged ? (pendingPrice as number) : previousPrice,
+                                previousPrice: item.price,
+                                newPrice: item.price,
                                 previousCost,
-                                newCost: costChanged ? (pendingCost as number) : previousCost,
+                                newCost: previousCost,
                                 timestamp: new Date().toISOString(),
                               });
 
@@ -3840,13 +3152,7 @@ export default function App() {
                             // Update local state
                             setStockData(prev => prev.map(product => {
                               if (product.id === item.id) {
-                                return {
-                                  ...product,
-                                  count: finalCount,
-                                  price: priceChanged ? (pendingPrice as number) : product.price,
-                                  cost: costChanged ? (pendingCost as number) : product.cost,
-                                  barcode: barcodeChanged ? (pendingBarcode as string) : product.barcode,
-                                };
+                                return { ...product, count: finalCount };
                               }
                               return product;
                             }));
@@ -3862,28 +3168,13 @@ export default function App() {
                               delete newValues[item.id];
                               return newValues;
                             });
-                            setPriceValues(prev => {
-                              const newValues = { ...prev };
-                              delete newValues[item.id];
-                              return newValues;
-                            });
-                            setCostValues(prev => {
-                              const newValues = { ...prev };
-                              delete newValues[item.id];
-                              return newValues;
-                            });
-                            setBarcodeValues(prev => {
-                              const newValues = { ...prev };
-                              delete newValues[item.id];
-                              return newValues;
-                            });
                             setWasteValues(prev => {
                               const newValues = { ...prev };
                               delete newValues[item.id];
                               return newValues;
                             });
 
-                            addLog('success', 'APPLY', `Değişiklikler uygulandı: ${item.name}`);
+                            addLog('success', 'APPLY', `Stok güncellendi: ${item.name}`);
                           } catch (error) {
                             addLog('error', 'APPLY', `Hata: ${item.name} güncellenemedi`, error);
                             showToast('error', t('errors.updateFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
@@ -4026,6 +3317,88 @@ export default function App() {
 
           </div>
 
+        )}
+
+        {/* Product Edit Modal */}
+        {editingProduct && (
+          <ProductEditModal
+            product={editingProduct}
+            onClose={() => setEditingProduct(null)}
+            onSave={async (updates) => {
+              try {
+                // Update name if changed
+                if (updates.name && updates.name !== editingProduct.name) {
+                  await updateProductName(editingProduct.id, updates.name);
+                }
+                // Update barcode if changed
+                if (updates.barcode && updates.barcode !== editingProduct.barcode) {
+                  await updateProductBarcode(editingProduct.id, updates.barcode);
+                }
+                // Update price if changed
+                if (updates.price !== undefined && updates.price !== editingProduct.price) {
+                  await updateProductPrice(editingProduct.id, updates.price);
+                }
+                // Update cost if changed
+                if (updates.cost !== undefined && updates.cost !== editingProduct.cost) {
+                  await updateProductCost(editingProduct.id, updates.cost);
+                }
+                // Update enableStock if changed
+                if (updates.enableStock !== undefined && updates.enableStock !== (editingProduct.enableStock ?? false)) {
+                  await updateEnableStock({ apiConfig, joinApi }, editingProduct.id, updates.enableStock);
+                }
+
+                // Update local state
+                setStockData(prev => prev.map(p =>
+                  p.id === editingProduct.id
+                    ? {
+                        ...p,
+                        name: updates.name ?? p.name,
+                        barcode: updates.barcode ?? p.barcode,
+                        price: updates.price ?? p.price,
+                        cost: updates.cost ?? p.cost,
+                        enableStock: updates.enableStock ?? p.enableStock,
+                      }
+                    : p
+                ));
+
+                addLog('success', 'PRODUCT_UPDATE', `Ürün güncellendi: ${editingProduct.name}`);
+                showToast('success', `${editingProduct.name} güncellendi`);
+              } catch (error) {
+                addLog('error', 'PRODUCT_UPDATE', `Güncelleme hatası: ${editingProduct.name}`, error);
+                showToast('error', `Güncelleme başarısız: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+                throw error;
+              }
+            }}
+            onDelete={async () => {
+              try {
+                await deleteProduct({ apiConfig, joinApi }, editingProduct.id);
+                setStockData(prev => prev.map(p =>
+                  p.id === editingProduct.id ? { ...p, isDeleted: true } : p
+                ));
+                addLog('success', 'DELETE', `Ürün silindi: ${editingProduct.name}`);
+                showToast('success', `${editingProduct.name} silindi`);
+              } catch (error) {
+                addLog('error', 'DELETE', `Silme hatası: ${editingProduct.name}`, error);
+                showToast('error', `Silme başarısız`);
+                throw error;
+              }
+            }}
+            onRestore={async () => {
+              try {
+                await restoreProduct({ apiConfig, joinApi }, editingProduct.id);
+                setStockData(prev => prev.map(p =>
+                  p.id === editingProduct.id ? { ...p, isDeleted: false } : p
+                ));
+                addLog('success', 'RESTORE', `Ürün geri alındı: ${editingProduct.name}`);
+                showToast('success', `${editingProduct.name} geri alındı`);
+                setEditingProduct(null);
+              } catch (error) {
+                addLog('error', 'RESTORE', `Geri alma hatası: ${editingProduct.name}`, error);
+                showToast('error', `Geri alma başarısız`);
+                throw error;
+              }
+            }}
+          />
         )}
 
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
